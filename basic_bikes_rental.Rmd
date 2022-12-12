@@ -1,0 +1,121 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Bike Rental Data
+
+## Preprocesado de limpieza
+
+Instalación de tidyverse
+
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+```
+
+Carga del dataset: subconjuto de entrenamiento.
+
+```{r}
+bikes <- read.csv("data/train.csv")
+View(bikes)
+colnames(bikes)
+dim(bikes)
+```
+
+```{r}
+# Preprocesamiento 1. Valores perdidos y Filas duplicadas
+#help(read.table)
+bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
+str(bikes)
+
+# Búsqueda de valores NA
+complete.cases(bikes)
+
+# Búsqueda de valores NA
+complete.cases(bikes)
+```
+
+```{r}
+# Preprocesamiento 2. Detección y eliminación de outliers
+str(bikes)
+head(bikes)
+```
+
+```{r}
+# Outliers: hour
+boxplot(bikes$hour, horizontal = TRUE)
+boxplot.stats(bikes$hour)
+```
+
+```{r}
+# Outliers: season
+boxplot(bikes$season, horizontal = TRUE)
+boxplot.stats(bikes$season)
+```
+
+```{r}
+# Outliers: weather
+boxplot(bikes$weather, horizontal = TRUE)
+boxplot.stats(bikes$weather)
+```
+
+```{r}
+# Outliers: temp
+boxplot(bikes$temp, horizontal = TRUE)
+boxplot.stats(bikes$temp)
+```
+
+```{r}
+# Outliers: atemp
+boxplot(bikes$atemp, horizontal = TRUE)
+boxplot.stats(bikes$atemp)
+```
+
+```{r}
+# Outliers: humidity
+boxplot(bikes$humidity, horizontal = TRUE)
+boxplot.stats(bikes$humidity)
+```
+
+```{r}
+# Outliers: windspeed
+boxplot(bikes$windspeed, horizontal = TRUE)
+boxplot.stats(bikes$windspeed)
+```
+
+```{r}
+# Outliers en windspeed por encima de 32 km/h
+outlier_min <- min(boxplot.stats(bikes$windspeed)$out)
+
+bikes_without_liers <- bikes$windspeed[bikes$windspeed < outlier_min]
+
+# Comprobación
+boxplot(bikes_without_liers, horizontal = TRUE)
+boxplot.stats(bikes_without_liers)
+
+# Filtrado de dataframe
+bikes1 <- filter(bikes, bikes$windspeed < outlier_min)
+
+str(bikes1)
+head(bikes1)
+```
+
+Dataframe preprocesado para identificación de valores perdidos, ejemplos duplicados y detección y eliminación de outliers.
+
+```{r}
+summary(bikes1)
+```
+
+## Visualización
+
+Instalación de ggplot2
+
+```{r}
+install.packages('ggplot2')
+library(ggplot2)
+```
+
+```{r}
+# So, now...what do we looking for?
+```
