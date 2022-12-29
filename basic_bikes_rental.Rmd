@@ -5,28 +5,86 @@ output: html_notebook
 
 # Bike Rental Data
 
-## Preprocesado de limpieza
+Los sistemas de alquiler de bicicletas suelen recopilar información interesante como la duración, los puntos de salida y destino y el tiempo del viaje. Con el fin de mejorar la gestión, se propone anticipar la demanda que habrá en un determinado rango de tiempo. Teniendo en cuenta la franja horaria, el tipo de día (laborable o festivo), la climatología, etc.
 
-Instalación de tidyverse
+Por lo tanto, el objetivo es predecir la demanda de bicicletas en una serie de franjas horarias, empleando el siguiente conjunto de [datos](https://www.kaggle.com/datasets/aguado/bike-rental-data-set-uci).
+
+El resto del documento se organiza de la siguiente forma: en la sección 1 se realiza un estudio de los datos y su prepocesamiento.
+
+## Sección 1: Análisis y preprocesamiento de los datos
+
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización.
 
 ```{r}
 install.packages("tidyverse")
 library(tidyverse)
 ```
 
-Carga del dataset: subconjuto de entrenamiento.
+Carga del dataset: subconjuto de entrenamiento. Estudio de los datos tal y como se obtienen de ***Kaggle***. Como veremos los datos están todos en una columna separados por ";".
 
 ```{r}
 bikes <- read.csv("data/train.csv")
 View(bikes)
+head(bikes)
 colnames(bikes)
 dim(bikes)
 ```
 
+#### Análisis de los datos
+
+En primer lugar, separamos los datos por ";" con el fin de tener las columnas separadas y poder análizar correctamente los datos. La función *summary* nos ofrece un resumen por cada una de las variables presentes en el dataset.
+
+```{r}
+bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
+names(bikes)[12] <- "num_bikes"
+head(bikes)
+colnames(bikes)
+dim(bikes)
+summary(bikes)
+```
+
+Comprobamos la homogeneidad de los datos:
+
+¿Cuál ha sido el registro de datos recopilados según la hora? ¿Cuál ha sido el registro de datos recopilados según la temporada del año?
+
+```{r}
+bikes %>%
+  group_by(hour) %>% 
+  count()
+bikes %>%
+  group_by(season) %>% 
+  count()
+```
+
+¿Cuántas bicicletas se han alquilado según la hora del día? ¿Cuántas bicicletas se han alquilado según la temporada del año?
+
+```{r}
+  bikes %>%
+  group_by(hour) %>%
+  summarize(total_bikes = sum(num_bikes))
+  bikes %>%
+  group_by(season) %>%
+  summarize(total_bikes = sum(num_bikes))
+```
+
+Porcentaje de bicicletas alquiladas según la hora del día.
+
+```{r}
+```
+
+Búsqueda de relación lineal: dibujar el número de bicicletas en función del resto de variables.
+
+```{r}
+```
+
+#### Preprocesado de los datos
+
+Tras estudiar las variables presentes en el conjunto de datos procedemos a la limpieza de los datos. El objetivo es encontrar valores perdidos (NA) y filas duplicadas.
+
 ```{r}
 # Preprocesamiento 1. Valores perdidos y Filas duplicadas
 #help(read.table)
-bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
+#bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
 str(bikes)
 
 # Búsqueda de valores NA
@@ -107,7 +165,11 @@ Dataframe preprocesado para identificación de valores perdidos, ejemplos duplic
 summary(bikes1)
 ```
 
-## Visualización
+## Sección 2: Algoritmos supervisado. Regresión multivariable.
+
+## Sección 3: Algoritmos no supervisados. Clustering.
+
+## Sección 4: Visualización de los resultados. Conclusiones.
 
 Instalación de ggplot2
 
