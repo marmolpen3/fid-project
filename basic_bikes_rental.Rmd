@@ -11,7 +11,7 @@ Por lo tanto, el objetivo es predecir la demanda de bicicletas en una serie de f
 
 El resto del documento se organiza de la siguiente forma: en la sección 1 se realiza un estudio de los datos y su prepocesamiento.
 
-## Sección 1: Análisis y preprocesamiento de los datos
+## Preprocesamiento y análisis de los datos
 
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización.
 
@@ -160,11 +160,7 @@ Dataframe preprocesado para identificación de valores perdidos, ejemplos duplic
 summary(bikes_train_set)
 ```
 
-## Sección 2: Algoritmos supervisado. Regresión multivariable.
-
-## Sección 3: Algoritmos no supervisados. Clustering.
-
-## Sección 4: Visualización de los resultados. Conclusiones.
+## Visualización
 
 Instalación de ggplot2
 
@@ -184,3 +180,17 @@ bikes_by_hour <- bikes_train_set %>%
 ggplot(bikes_by_hour, aes(x = hour, y = total_bikes)) +
   geom_bar(stat = "identity")
 ```
+
+## Algoritmo lm()
+
+Modelo realizado con lm como en la práctica 3 (regresión).
+
+Y predicción con ese modelo.
+
+## Algoritmos Caret
+
+Modelos realizados con Caret
+
+Y predicción con esos modelos.
+
+## Comparativa de modelos
