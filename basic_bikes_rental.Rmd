@@ -67,7 +67,21 @@ train_bikes <- train_bikes %>%
 ```
 
 ```{r}
-boxplot(train_bikes, by="num_bikes", title="BoxPlot of each Variable" )
+# Preprocesamiento 2. Detección y eliminación de outliers
+train_bikes_boxplot <- select(train_bikes, -year, -num_bikes)
+boxplot(train_bikes_boxplot, col = rainbow(ncol(train_bikes_boxplot)))
+```
+
+```{r}
+# First half
+train_bikes_half1 <- select(train_bikes, year, hour, season, holiday, workingday, weather)
+par(mfrow = c(1, ncol(train_bikes_half1)))
+invisible(lapply(1:ncol(train_bikes_half1), function(i) boxplot(train_bikes_half1[, i])))
+
+# Second half
+train_bikes_half2 <- select(train_bikes, temp, atemp, humidity, windspeed, num_bikes)
+par(mfrow = c(1, ncol(train_bikes_half2)))
+invisible(lapply(1:ncol(train_bikes_half2), function(i) boxplot(train_bikes_half2[, i])))
 ```
 
 ```{r}
@@ -116,6 +130,12 @@ boxplot.stats(train_bikes$humidity)
 # Outliers: windspeed
 boxplot(train_bikes$windspeed, horizontal = TRUE)
 boxplot.stats(train_bikes$windspeed)
+```
+
+```{r}
+# Outliers: holiday
+boxplot(train_bikes$holiday, horizontal = TRUE)
+boxplot.stats(train_bikes$holiday)
 ```
 
 La velocidad del viento (windspeed) es el único atributo que presenta outliers, por lo que se procede a eliminarlos.
