@@ -15,41 +15,145 @@ El resto del documento se organiza de la siguiente forma: en la sección 1 se re
 
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización.
 
+Instalación de ***Visadat*** para búsqueda de valores nulos.
+
+Instalación de ***ggplot2*** para visualización.
+
 ```{r}
+install.packages("visdat")
 library(tidyverse)
+library(visdat)
+library(ggplot2)
 ```
 
 Carga del dataset: subconjuto de entrenamiento. Estudio de los datos tal y como se obtienen de ***Kaggle***. Como veremos los datos están todos en una columna separados por ";".
 
 ```{r}
 bikes <- read.csv("data/train.csv")
-head(bikes)
 colnames(bikes)
 dim(bikes)
+```
+
+#### Preprocesado de los datos
+
+En primer lugar, separamos los datos por ";" con el fin de tener las columnas separadas y poder preprocesar y análizar correctamente los datos. La función *summary* nos ofrece un resumen por cada una de las variables presentes en el dataset.
+
+```{r}
+train_bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
+head(train_bikes)
+colnames(train_bikes)
+dim(train_bikes)
+summary(train_bikes)
+```
+
+Como podemos observar el atributo id no aporta información relevante, por lo que vamos a proceder a eliminarlo. Por otro lado, el atributo count no tiene un nombre representativo, lo sustituiremos por num_bikes.
+
+```{r}
+train_bikes <- select(train_bikes, -id)
+names(train_bikes)[11] <- "num_bikes"
+head(train_bikes)
+```
+
+Tras estudiar las variables presentes en el conjunto de datos procedemos a la limpieza de los datos. El objetivo es encontrar valores perdidos (NA) y filas duplicadas.
+
+```{r}
+# Preprocesamiento 1. Valores perdidos y Filas duplicadas
+
+# Búsqueda de valores NA
+vis_miss(train_bikes);
+# Esta función filtraría todos los ejemplos incompletos, si hubiera.
+train_bikes <- train_bikes %>%
+  filter(complete.cases(train_bikes))
+```
+
+```{r}
+boxplot(train_bikes, by="num_bikes", title="BoxPlot of each Variable" )
+```
+
+```{r}
+# Preprocesamiento 2. Detección y eliminación de outliers
+str(train_bikes)
+head(train_bikes)
+```
+
+```{r}
+# Outliers: hour
+boxplot(train_bikes$hour, horizontal = TRUE)
+boxplot.stats(train_bikes$hour)
+```
+
+```{r}
+# Outliers: season
+boxplot(train_bikes$season, horizontal = TRUE)
+boxplot.stats(train_bikes$season)
+```
+
+```{r}
+# Outliers: weather
+boxplot(train_bikes$weather, horizontal = TRUE)
+boxplot.stats(train_bikes$weather)
+```
+
+```{r}
+# Outliers: temp
+boxplot(train_bikes$temp, horizontal = TRUE)
+boxplot.stats(train_bikes$temp)
+```
+
+```{r}
+# Outliers: atemp
+boxplot(train_bikes$atemp, horizontal = TRUE)
+boxplot.stats(train_bikes$atemp)
+```
+
+```{r}
+# Outliers: humidity
+boxplot(train_bikes$humidity, horizontal = TRUE)
+boxplot.stats(train_bikes$humidity)
+```
+
+```{r}
+# Outliers: windspeed
+boxplot(train_bikes$windspeed, horizontal = TRUE)
+boxplot.stats(train_bikes$windspeed)
+```
+
+La velocidad del viento (windspeed) es el único atributo que presenta outliers, por lo que se procede a eliminarlos.
+
+```{r}
+# Outliers en windspeed por encima de 32 km/h
+outlier_min <- min(boxplot.stats(train_bikes$windspeed)$out)
+
+bikes_without_liers <- train_bikes$windspeed[train_bikes$windspeed < outlier_min]
+
+# Comprobación
+boxplot(bikes_without_liers, horizontal = TRUE)
+boxplot.stats(bikes_without_liers)
+
+# Filtrado de dataframe
+train_bikes <- filter(train_bikes, train_bikes$windspeed < outlier_min)
+
+str(train_bikes)
+head(train_bikes)
+```
+
+Dataframe preprocesado para identificación de valores perdidos, ejemplos duplicados y detección y eliminación de outliers.
+
+```{r}
+summary(train_bikes)
 ```
 
 #### Análisis de los datos
-
-En primer lugar, separamos los datos por ";" con el fin de tener las columnas separadas y poder análizar correctamente los datos. La función *summary* nos ofrece un resumen por cada una de las variables presentes en el dataset.
-
-```{r}
-bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
-names(bikes)[12] <- "num_bikes"
-head(bikes)
-colnames(bikes)
-dim(bikes)
-summary(bikes)
-```
 
 Comprobamos la homogeneidad de los datos:
 
 ¿Cuál ha sido el registro de datos recopilados según la hora? ¿Cuál ha sido el registro de datos recopilados según la temporada del año?
 
 ```{r}
-bikes %>%
+train_bikes %>%
   group_by(hour) %>% 
   count()
-bikes %>%
+train_bikes %>%
   group_by(season) %>% 
   count()
 ```
@@ -57,10 +161,10 @@ bikes %>%
 ¿Cuántas bicicletas se han alquilado según la hora del día? ¿Cuántas bicicletas se han alquilado según la temporada del año?
 
 ```{r}
-  bikes %>%
+  train_bikes %>%
   group_by(hour) %>%
   summarize(total_bikes = sum(num_bikes))
-  bikes %>%
+  train_bikes %>%
   group_by(season) %>%
   summarize(total_bikes = sum(num_bikes))
 ```
@@ -75,105 +179,16 @@ Búsqueda de relación lineal: dibujar el número de bicicletas en función del 
 ```{r}
 ```
 
-#### Preprocesado de los datos
-
-Tras estudiar las variables presentes en el conjunto de datos procedemos a la limpieza de los datos. El objetivo es encontrar valores perdidos (NA) y filas duplicadas.
-
-```{r}
-# Preprocesamiento 1. Valores perdidos y Filas duplicadas
-
-# Búsqueda de valores NA
-bikes <- bikes %>%
-  filter(complete.cases(bikes))
-```
-
-```{r}
-# Preprocesamiento 2. Detección y eliminación de outliers
-str(bikes)
-head(bikes)
-```
-
-```{r}
-# Outliers: hour
-boxplot(bikes$hour, horizontal = TRUE)
-boxplot.stats(bikes$hour)
-```
-
-```{r}
-# Outliers: season
-boxplot(bikes$season, horizontal = TRUE)
-boxplot.stats(bikes$season)
-```
-
-```{r}
-# Outliers: weather
-boxplot(bikes$weather, horizontal = TRUE)
-boxplot.stats(bikes$weather)
-```
-
-```{r}
-# Outliers: temp
-boxplot(bikes$temp, horizontal = TRUE)
-boxplot.stats(bikes$temp)
-```
-
-```{r}
-# Outliers: atemp
-boxplot(bikes$atemp, horizontal = TRUE)
-boxplot.stats(bikes$atemp)
-```
-
-```{r}
-# Outliers: humidity
-boxplot(bikes$humidity, horizontal = TRUE)
-boxplot.stats(bikes$humidity)
-```
-
-```{r}
-# Outliers: windspeed
-boxplot(bikes$windspeed, horizontal = TRUE)
-boxplot.stats(bikes$windspeed)
-```
-
-La velocidad del viento (windspeed) es el único atributo que presenta outliers, por lo que se procede a eliminarlos.
-
-```{r}
-# Outliers en windspeed por encima de 32 km/h
-outlier_min <- min(boxplot.stats(bikes$windspeed)$out)
-
-bikes_without_liers <- bikes$windspeed[bikes$windspeed < outlier_min]
-
-# Comprobación
-boxplot(bikes_without_liers, horizontal = TRUE)
-boxplot.stats(bikes_without_liers)
-
-# Filtrado de dataframe
-bikes_train_set <- filter(bikes, bikes$windspeed < outlier_min)
-
-str(bikes_train_set)
-head(bikes_train_set)
-```
-
-Dataframe preprocesado para identificación de valores perdidos, ejemplos duplicados y detección y eliminación de outliers.
-
-```{r}
-summary(bikes_train_set)
-```
-
 ## Visualización
 
 Instalación de ggplot2
-
-```{r}
-library(ggplot2)
-```
 
 ```{r}
 # So, now...what do we looking for?
 ```
 
 ```{r}
-bikes_by_hour <- bikes_train_set %>%
+bikes_by_hour <- train_bikes %>%
   group_by(hour) %>%
   summarise(total_bikes = sum(num_bikes))
 
