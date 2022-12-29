@@ -16,7 +16,6 @@ El resto del documento se organiza de la siguiente forma: en la sección 1 se re
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización.
 
 ```{r}
-install.packages("tidyverse")
 library(tidyverse)
 ```
 
@@ -24,7 +23,6 @@ Carga del dataset: subconjuto de entrenamiento. Estudio de los datos tal y como 
 
 ```{r}
 bikes <- read.csv("data/train.csv")
-View(bikes)
 head(bikes)
 colnames(bikes)
 dim(bikes)
@@ -83,15 +81,10 @@ Tras estudiar las variables presentes en el conjunto de datos procedemos a la li
 
 ```{r}
 # Preprocesamiento 1. Valores perdidos y Filas duplicadas
-#help(read.table)
-#bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
-str(bikes)
 
 # Búsqueda de valores NA
-complete.cases(bikes)
-
-# Búsqueda de valores NA
-complete.cases(bikes)
+bikes <- bikes %>%
+  filter(complete.cases(bikes))
 ```
 
 ```{r}
@@ -142,6 +135,8 @@ boxplot(bikes$windspeed, horizontal = TRUE)
 boxplot.stats(bikes$windspeed)
 ```
 
+La velocidad del viento (windspeed) es el único atributo que presenta outliers, por lo que se procede a eliminarlos.
+
 ```{r}
 # Outliers en windspeed por encima de 32 km/h
 outlier_min <- min(boxplot.stats(bikes$windspeed)$out)
@@ -153,16 +148,16 @@ boxplot(bikes_without_liers, horizontal = TRUE)
 boxplot.stats(bikes_without_liers)
 
 # Filtrado de dataframe
-bikes1 <- filter(bikes, bikes$windspeed < outlier_min)
+bikes_train_set <- filter(bikes, bikes$windspeed < outlier_min)
 
-str(bikes1)
-head(bikes1)
+str(bikes_train_set)
+head(bikes_train_set)
 ```
 
 Dataframe preprocesado para identificación de valores perdidos, ejemplos duplicados y detección y eliminación de outliers.
 
 ```{r}
-summary(bikes1)
+summary(bikes_train_set)
 ```
 
 ## Sección 2: Algoritmos supervisado. Regresión multivariable.
@@ -174,10 +169,18 @@ summary(bikes1)
 Instalación de ggplot2
 
 ```{r}
-install.packages('ggplot2')
 library(ggplot2)
 ```
 
 ```{r}
 # So, now...what do we looking for?
+```
+
+```{r}
+bikes_by_hour <- bikes_train_set %>%
+  group_by(hour) %>%
+  summarise(total_bikes = sum(num_bikes))
+
+ggplot(bikes_by_hour, aes(x = hour, y = total_bikes)) +
+  geom_bar(stat = "identity")
 ```
