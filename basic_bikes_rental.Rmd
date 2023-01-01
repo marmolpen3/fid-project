@@ -13,11 +13,7 @@ El resto del documento se organiza de la siguiente forma: en la sección 1 se re
 
 ## Preprocesamiento y análisis de los datos
 
-Instalación de ***tidyverse*** para la manipulación de los datos y la visualización.
-
-Instalación de ***Visadat*** para búsqueda de valores nulos.
-
-Instalación de ***ggplot2*** para visualización.
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
 
 ```{r}
 install.packages("visdat")
@@ -54,10 +50,10 @@ names(train_bikes)[11] <- "num_bikes"
 head(train_bikes)
 ```
 
-Tras estudiar las variables presentes en el conjunto de datos procedemos a la limpieza de los datos. El objetivo es encontrar valores perdidos (NA) y filas duplicadas.
+Tras estudiar las variables presentes en el conjunto de datos procedemos a la limpieza de los datos. El objetivo es encontrar valores perdidos (NA).
 
 ```{r}
-# Preprocesamiento 1. Valores perdidos y Filas duplicadas
+# Preprocesamiento 1. Valores perdidos
 
 # Búsqueda de valores NA
 vis_miss(train_bikes);
@@ -66,76 +62,13 @@ train_bikes <- train_bikes %>%
   filter(complete.cases(train_bikes))
 ```
 
+En cuanto a la detección y eliminación de outliers, el primer paso es visualizar los valores que contienen ruido a través de una gráfica. Las columnas que estudiamos son aquellas que su valor no está limitado ( *temperatura, temperatura media, humedad, velocidad del viento*).
+
 ```{r}
 # Preprocesamiento 2. Detección y eliminación de outliers
-train_bikes_boxplot <- select(train_bikes, -year, -num_bikes)
+train_bikes_boxplot <- select(train_bikes, temp, atemp, humidity, windspeed)
 boxplot(train_bikes_boxplot, col = rainbow(ncol(train_bikes_boxplot)))
-```
-
-```{r}
-# First half
-train_bikes_half1 <- select(train_bikes, year, hour, season, holiday, workingday, weather)
-par(mfrow = c(1, ncol(train_bikes_half1)))
-invisible(lapply(1:ncol(train_bikes_half1), function(i) boxplot(train_bikes_half1[, i])))
-
-# Second half
-train_bikes_half2 <- select(train_bikes, temp, atemp, humidity, windspeed, num_bikes)
-par(mfrow = c(1, ncol(train_bikes_half2)))
-invisible(lapply(1:ncol(train_bikes_half2), function(i) boxplot(train_bikes_half2[, i])))
-```
-
-```{r}
-# Preprocesamiento 2. Detección y eliminación de outliers
-str(train_bikes)
-head(train_bikes)
-```
-
-```{r}
-# Outliers: hour
-boxplot(train_bikes$hour, horizontal = TRUE)
-boxplot.stats(train_bikes$hour)
-```
-
-```{r}
-# Outliers: season
-boxplot(train_bikes$season, horizontal = TRUE)
-boxplot.stats(train_bikes$season)
-```
-
-```{r}
-# Outliers: weather
-boxplot(train_bikes$weather, horizontal = TRUE)
-boxplot.stats(train_bikes$weather)
-```
-
-```{r}
-# Outliers: temp
-boxplot(train_bikes$temp, horizontal = TRUE)
-boxplot.stats(train_bikes$temp)
-```
-
-```{r}
-# Outliers: atemp
-boxplot(train_bikes$atemp, horizontal = TRUE)
-boxplot.stats(train_bikes$atemp)
-```
-
-```{r}
-# Outliers: humidity
-boxplot(train_bikes$humidity, horizontal = TRUE)
-boxplot.stats(train_bikes$humidity)
-```
-
-```{r}
-# Outliers: windspeed
-boxplot(train_bikes$windspeed, horizontal = TRUE)
 boxplot.stats(train_bikes$windspeed)
-```
-
-```{r}
-# Outliers: holiday
-boxplot(train_bikes$holiday, horizontal = TRUE)
-boxplot.stats(train_bikes$holiday)
 ```
 
 La velocidad del viento (windspeed) es el único atributo que presenta outliers, por lo que se procede a eliminarlos.
@@ -157,41 +90,148 @@ str(train_bikes)
 head(train_bikes)
 ```
 
-Dataframe preprocesado para identificación de valores perdidos, ejemplos duplicados y detección y eliminación de outliers.
+Respecto al resto de variables que contiene el dataset, se debe comprobar que todos los ejemplos poseen valores dentro del rango permitido.
+
+```{r}
+range(train_bikes$year)
+range(train_bikes$hour)
+range(train_bikes$season)
+range(train_bikes$holiday)
+range(train_bikes$workingday)
+range(train_bikes$weather)
+```
+
+Dataframe preprocesado para identificación de valores perdidos, detección y eliminación de outliersy comprobación del rango en variables estáticas.
 
 ```{r}
 summary(train_bikes)
 ```
 
-#### Análisis de los datos
+#### Análisis y visualización de los datos
 
-Comprobamos la homogeneidad de los datos:
+Comprobamos la homogeneidad de los datos: ¿Cuál es el registro de datos recopilados según la hora? ¿Cuál es el registro de datos recopilados según la temporada del año?
 
-¿Cuál ha sido el registro de datos recopilados según la hora? ¿Cuál ha sido el registro de datos recopilados según la temporada del año?
+Observaremos que durante la temporada de vacaciones es menos probable que se alquilen bicicletas y por ello, es más complejo recopilar los datos de esos días. Por otro lado, el tiempo también influye en el dataset, para el peor temporal encontramos muchos menos registros.
 
 ```{r}
+# Ejemplos disponibles según el año
+train_bikes %>%
+  group_by(year) %>% 
+  count()
+
+# Ejemplos disponibles según la hora del día
 train_bikes %>%
   group_by(hour) %>% 
   count()
+
+# Ejemplos disponibles según la temporada del año
 train_bikes %>%
   group_by(season) %>% 
   count()
+
+# Ejemplos disponibles para vacaciones
+train_bikes %>%
+  group_by(holiday) %>% 
+  count()
+
+# Ejemplos disponibles para días de trabajo
+train_bikes %>%
+  group_by(workingday) %>% 
+  count()
+
+# Ejemplos disponibles según el tiempo
+train_bikes %>%
+  group_by(weather) %>% 
+  count()
+
 ```
 
-¿Cuántas bicicletas se han alquilado según la hora del día? ¿Cuántas bicicletas se han alquilado según la temporada del año?
+¿Cuántas bicicletas se han alquilado según la hora del día?
 
 ```{r}
-  train_bikes %>%
+bikes_by_hour <- train_bikes %>%
   group_by(hour) %>%
-  summarize(total_bikes = sum(num_bikes))
-  train_bikes %>%
+  summarize(total_bikes_by_hour = sum(num_bikes))
+  
+ggplot(bikes_by_hour, aes(x = hour, y = total_bikes_by_hour)) +
+  geom_bar(stat = "identity")
+```
+
+¿Cuántas bicicletas se han alquilado según la temporada del año?
+
+```{r}
+bikes_by_season <- train_bikes %>%
   group_by(season) %>%
-  summarize(total_bikes = sum(num_bikes))
+  summarize(total_bikes_by_season = sum(num_bikes))
+  
+ggplot(bikes_by_season, aes(x = season, y = total_bikes_by_season)) +
+  geom_bar(stat = "identity")
+```
+
+¿Cuántas bicicletas se han alquilado según el temporal?
+
+```{r}
+bikes_by_weather <- train_bikes %>%
+  group_by(weather) %>%
+  summarize(total_bikes_by_weather = sum(num_bikes))
+  
+ggplot(bikes_by_weather, aes(x = weather, y = total_bikes_by_weather)) +
+  geom_bar(stat = "identity")
+```
+
+Porcentaje de bicicletas que se alquilan durante los días de trabajo.
+
+```{r}
+
+bikes_by_working_day <- train_bikes %>%
+  group_by(workingday) %>%
+  summarize(total_bikes_by_working_day = sum(num_bikes))
+
+bike_count <- bikes_by_working_day$total_bikes_by_working_day
+
+bike_percentage <- paste0(round(100 * bike_count/sum(bike_count), 2), "%")
+
+pie(bike_count, labels = bike_percentage)
+
+legend("topleft", legend = c( "No laboral", "Laboral"), fill =  c("white", "lightblue"))
+```
+
+Porcentaje de bicicletas que se alquilan durante los días de vacaciones.
+
+```{r}
+
+bikes_by_holiday <- train_bikes %>%
+  group_by(holiday) %>%
+  summarize(total_bikes_by_holiday = sum(num_bikes))
+
+bike_count <- bikes_by_holiday$total_bikes_by_holiday
+
+bike_percentage <- paste0(round(100 * bike_count/sum(bike_count), 2), "%")
+
+pie(bike_count, labels = bike_percentage)
+
+legend("topleft", legend = c( "No vacaciones", "Vacaciones"), fill =  c("white", "lightblue"))
+```
+
+¿Cuántas bicicletas se han alquilado según el año?
+
+```{r}
+
+#bikes_by_year_hour <- train_bikes %>%
+#  group_by(hour) %>%
+#  group_by(year) %>%
+#  summarize(total_bikes_by_year_hour = sum(num_bikes))
+
+#hours <- c(0:23)
+#hours
+
+#ggplot(bikes_by_year_hour, aes(x = train_bikes$hour, y = total_bikes_by_year_hour, group = year)) + geom_line()
 ```
 
 Porcentaje de bicicletas alquiladas según la hora del día.
 
 ```{r}
+
 ```
 
 Búsqueda de relación lineal: dibujar el número de bicicletas en función del resto de variables.
@@ -208,12 +248,7 @@ Instalación de ggplot2
 ```
 
 ```{r}
-bikes_by_hour <- train_bikes %>%
-  group_by(hour) %>%
-  summarise(total_bikes = sum(num_bikes))
 
-ggplot(bikes_by_hour, aes(x = hour, y = total_bikes)) +
-  geom_bar(stat = "identity")
 ```
 
 ## Algoritmo lm()
