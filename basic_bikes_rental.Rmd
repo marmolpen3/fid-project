@@ -90,6 +90,16 @@ str(train_bikes)
 head(train_bikes)
 ```
 
+A pesar de que no hay outliers en la variable humedad, es un factor que puede afectar a la salud en un porcentaje menor al 30%. Por ello, vamos a eliminar todos los ejemplos cuya humedad registrada sea menor a esta.
+
+```{r}
+# Filtrado de dataframe
+train_bikes <- filter(train_bikes, train_bikes$humidity > 30)
+
+# Comprobación
+boxplot(train_bikes$humidity, horizontal = TRUE)
+```
+
 Respecto al resto de variables que contiene el dataset, se debe comprobar que todos los ejemplos poseen valores dentro del rango permitido.
 
 ```{r}
@@ -105,6 +115,81 @@ Dataframe preprocesado para identificación de valores perdidos, detección y el
 
 ```{r}
 summary(train_bikes)
+```
+
+A continuación, se realiza el preprocesamiento para los datos de testeo.
+
+```{r}
+test_bikes <- read.table("data/test.csv", na.strings="", header=TRUE, sep=";", dec=".")
+head(test_bikes)
+colnames(test_bikes)
+dim(test_bikes)
+```
+
+Eliminamos la columna id, ya que no aporta ningún valor en el testeo.
+
+```{r}
+test_bikes <- select(test_bikes, -id)
+head(test_bikes)
+```
+
+Realizamos una búsqueda de valores indefinidos.
+
+```{r}
+# Preprocesamiento 1. Valores perdidos
+
+# Búsqueda de valores NA
+vis_miss(test_bikes);
+# Esta función filtraría todos los ejemplos incompletos, si hubiera.
+test_bikes <- test_bikes %>%
+  filter(complete.cases(test_bikes))
+```
+
+```{r}
+# Preprocesamiento 2. Detección y eliminación de outliers
+test_bikes_boxplot <- select(test_bikes, temp, atemp, humidity, windspeed)
+boxplot(test_bikes_boxplot, col = rainbow(ncol(test_bikes_boxplot)))
+boxplot.stats(test_bikes$windspeed)
+```
+
+```{r}
+# Outliers en windspeed por encima de 32 km/h
+outlier_min <- min(boxplot.stats(test_bikes$windspeed)$out)
+
+test_bikes_without_liers <- test_bikes$windspeed[test_bikes$windspeed < outlier_min]
+
+# Comprobación
+boxplot(test_bikes_without_liers, horizontal = TRUE)
+boxplot.stats(test_bikes_without_liers)
+
+# Filtrado de dataframe
+test_bikes <- filter(test_bikes, test_bikes$windspeed < outlier_min)
+
+str(test_bikes)
+head(test_bikes)
+```
+
+Al igual que anteriormente, eliminamos los ejemplos cuya humedad sea inferior a 30.
+
+```{r}
+# Filtrado de dataframe
+test_bikes <- filter(test_bikes, test_bikes$humidity > 30)
+
+# Comprobación
+boxplot(test_bikes$humidity, horizontal = TRUE)
+```
+
+```{r}
+range(test_bikes$year)
+range(test_bikes$hour)
+range(test_bikes$season)
+range(test_bikes$holiday)
+range(test_bikes$workingday)
+range(test_bikes$weather)
+```
+
+```{r}
+summary(test_bikes)
 ```
 
 #### Análisis y visualización de los datos
