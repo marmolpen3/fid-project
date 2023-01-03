@@ -218,6 +218,8 @@ Con esto, tomaremos el subconjunto de entrenamiento, el cual se usará para prep
 # Ya tendría que estar cargado en memoria por los pasos previos.
 bikes_train_set <- bikes_train_set %>%
   select(-id)
+
+head(bikes_train_set)
 ```
 
 Acto seguido, se procede a crear un primer modelo de regresión.
@@ -237,17 +239,54 @@ model_xgbTree <- train(
   bikes_train_set,
   method = "xgbTree",
   trControl = fitControl)
+```
 
+```{r}
 model_xgbTree
 ```
 
 Hacemos predicción:
 
 ```{r}
-testing <- read_csv2("data/test.csv")
+#testing <- read.table("data/test.csv", na.strings="", header=TRUE, sep=";", dec=".") %>%
+testing <- read_delim("data/test.csv", delim = ";", col_names = TRUE) %>%
+  select(-id)
 head(testing)
-predict(model_rf_reg, newdata = head(testing))
-predict(model_xgbTree, newdata = head(testing))
+```
+
+```{r}
+# Outliers: humidity
+boxplot(testing$humidity, horizontal = TRUE)
+boxplot.stats(testing$humidity)
+
+testing_without_liers <- testing$humidity[testing$humidity > 0]
+
+# Comprobación
+boxplot(testing_without_liers, horizontal = TRUE)
+boxplot.stats(testing_without_liers)
+
+# Filtrado de dataframe
+bikes_testing_set <- filter(testing, testing$humidity > 0)
+
+str(bikes_testing_set)
+head(bikes_testing_set)
+```
+
+```{r}
+model_glmnet_reg <- train(
+  num_bikes ~ .,
+  bikes_train_set,
+  tuneGrid = expand.grid(alpha = 0:1, lambda = seq(0.0001, 1, length = 20)),
+  method = "glmnet",
+  trControl = fitControl)
+
+model_glmnet_reg
+```
+
+```{r}
+predict(model_rf_reg, newdata = head(bikes_testing_set))
+predict(model_xgbTree, newdata = head(bikes_testing_set))
+predict(model_glmnet_reg, newdata = head(bikes_testing_set))
 ```
 
 ## Comparativa de modelos
