@@ -358,8 +358,6 @@ A continuación, creamos la función de control mediante `trainControl`. Con est
 fitControl <- trainControl(
   method = "cv",
   number = 10,
-  #summaryFunction = twoClassSummary,
-  #classProbs = TRUE,
   savePredictions = TRUE,
   verbose = FALSE
 )
@@ -368,25 +366,24 @@ fitControl <- trainControl(
 Con esto, tomaremos el subconjunto de entrenamiento, el cual se usará para preparar los distintos modelos generados con el paquete Caret.
 
 ```{r}
-# Aquí se debe cargar el data frame ya limpio preprocesado,
-# listo para usarlo como conjunto de entrenamiento.
-# Ya tendría que estar cargado en memoria por los pasos previos.
-bikes_train_set <- bikes_train_set %>%
-  select(-id)
-
-head(bikes_train_set)
+head(train_bikes)
 ```
 
-Acto seguido, se procede a crear un primer modelo de regresión.
+### Random Forest
+
+Acto seguido, se procede a crear un primer modelo de regresión, utilizando el método Random Forest.
 
 ```{r}
 model_rf_reg <- train(num_bikes ~ .,
-                      bikes_train_set,
+                      train_bikes,
                       method = "rf",
-                      ntree = 5)
+                      ntree = 5,
+                      trControl = fitControl)
 
 model_rf_reg
 ```
+
+### xgbTree
 
 ```{r}
 model_xgbTree <- train(
@@ -400,32 +397,7 @@ model_xgbTree <- train(
 model_xgbTree
 ```
 
-Hacemos predicción:
-
-```{r}
-#testing <- read.table("data/test.csv", na.strings="", header=TRUE, sep=";", dec=".") %>%
-testing <- read_delim("data/test.csv", delim = ";", col_names = TRUE) %>%
-  select(-id)
-head(testing)
-```
-
-```{r}
-# Outliers: humidity
-boxplot(testing$humidity, horizontal = TRUE)
-boxplot.stats(testing$humidity)
-
-testing_without_liers <- testing$humidity[testing$humidity > 0]
-
-# Comprobación
-boxplot(testing_without_liers, horizontal = TRUE)
-boxplot.stats(testing_without_liers)
-
-# Filtrado de dataframe
-bikes_testing_set <- filter(testing, testing$humidity > 0)
-
-str(bikes_testing_set)
-head(bikes_testing_set)
-```
+### glmnet
 
 ```{r}
 model_glmnet_reg <- train(
@@ -436,12 +408,6 @@ model_glmnet_reg <- train(
   trControl = fitControl)
 
 model_glmnet_reg
-```
-
-```{r}
-predict(model_rf_reg, newdata = head(bikes_testing_set))
-predict(model_xgbTree, newdata = head(bikes_testing_set))
-predict(model_glmnet_reg, newdata = head(bikes_testing_set))
 ```
 
 ## Comparativa de modelos
