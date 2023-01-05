@@ -16,7 +16,7 @@ El resto del documento se organiza de la siguiente forma: en la sección 1 se re
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
 
 ```{r}
-install.packages("visdat")
+#install.packages("visdat")
 library(tidyverse)
 library(visdat)
 library(ggplot2)
@@ -357,9 +357,7 @@ A continuación, creamos la función de control mediante `trainControl`. Con est
 ```{r}
 fitControl <- trainControl(
   method = "cv",
-  number = 10,
-  savePredictions = TRUE,
-  verbose = FALSE
+  number = 10
 )
 ```
 
@@ -381,6 +379,12 @@ model_rf_reg <- train(num_bikes ~ .,
                       trControl = fitControl)
 
 model_rf_reg
+```
+
+A continuación, con el modelo obtenido, se realiza una predicción para algunos valores de prueba:
+
+```{r}
+predict(model_rf_reg, newdata = head(test_bikes))
 ```
 
 ### xgbTree
