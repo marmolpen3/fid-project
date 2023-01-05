@@ -388,7 +388,7 @@ model_rf_reg
 ```{r}
 model_xgbTree <- train(
   num_bikes ~ .,
-  bikes_train_set,
+  train_bikes,
   method = "xgbTree",
   trControl = fitControl)
 ```
@@ -397,17 +397,111 @@ model_xgbTree <- train(
 model_xgbTree
 ```
 
+```{r}
+model_xgbTree2 <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = expand.grid(
+    nrounds = 100,
+    max_depth = 5,
+    eta = 0.1,
+    gamma = 0,
+    colsample_bytree = 0.8,
+    min_child_weight = 1,
+    subsample = 0.8
+  ),
+  trControl = fitControl)
+
+model_xgbTree2
+```
+
+```{r}
+model_xgbTree3 <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = expand.grid(
+    nrounds = 100,
+    max_depth = 7,
+    eta = 0.1,
+    gamma = 0,
+    colsample_bytree = 0.8,
+    min_child_weight = 1,
+    subsample = 1
+  ),
+  trControl = fitControl)
+
+model_xgbTree3
+```
+
 ### glmnet
 
 ```{r}
 model_glmnet_reg <- train(
   num_bikes ~ .,
-  bikes_train_set,
+  train_bikes,
   tuneGrid = expand.grid(alpha = 0:1, lambda = seq(0.0001, 1, length = 20)),
   method = "glmnet",
   trControl = fitControl)
 
 model_glmnet_reg
+```
+
+### Predicción
+
+```{r}
+head(train_bikes$num_bikes)
+```
+
+```{r}
+predict(model_rf_reg, newdata = head(train_bikes))
+
+plot(x=predict(model_rf_reg), y= train_bikes$num_bikes,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+abline(a = 0, b = 1, col = "red", lwd = 2)
+```
+
+```{r}
+predict(model_xgbTree, newdata = head(train_bikes))
+
+plot(x=predict(model_xgbTree), y= train_bikes$num_bikes,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+abline(a = 0, b = 1, col = "red", lwd = 2)
+```
+
+```{r}
+predict(model_xgbTree2, newdata = head(train_bikes))
+
+plot(x=predict(model_xgbTree2), y= train_bikes$num_bikes,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+abline(a = 0, b = 1, col = "red", lwd = 2)
+```
+
+```{r}
+predict(model_xgbTree3, newdata = head(train_bikes))
+
+plot(x=predict(model_xgbTree3), y= train_bikes$num_bikes,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+abline(a = 0, b = 1, col = "red", lwd = 2)
+```
+
+```{r}
+predict(model_glmnet_reg, newdata = head(train_bikes))
+
+plot(x=predict(model_glmnet_reg), y= train_bikes$num_bikes,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+abline(a = 0, b = 1, col = "red", lwd = 2)
 ```
 
 ## Comparativa de modelos
