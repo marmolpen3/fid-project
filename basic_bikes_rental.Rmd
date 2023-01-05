@@ -450,9 +450,7 @@ A continuación, creamos la función de control mediante `trainControl`. Con est
 ```{r}
 fitControl <- trainControl(
   method = "cv",
-  number = 10,
-  savePredictions = TRUE,
-  verbose = FALSE
+  number = 10
 )
 ```
 
@@ -474,6 +472,12 @@ model_rf_reg <- train(num_bikes ~ .,
                       trControl = fitControl)
 
 model_rf_reg
+```
+
+A continuación, con el modelo obtenido, se realiza una predicción para algunos valores de prueba:
+
+```{r}
+predict(model_rf_reg, newdata = head(test_bikes))
 ```
 
 ### xgbTree
