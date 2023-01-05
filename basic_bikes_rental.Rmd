@@ -5,7 +5,31 @@ output: html_notebook
 
 # Bike Rental Data
 
-Los sistemas de alquiler de bicicletas suelen recopilar información interesante como la duración, los puntos de salida y destino y el tiempo del viaje. Con el fin de mejorar la gestión, se propone anticipar la demanda que habrá en un determinado rango de tiempo. Teniendo en cuenta la franja horaria, el tipo de día (laborable o festivo), la climatología, etc.
+Los sistemas de alquiler de bicicletas suelen recopilar información interesante como la duración, los puntos de salida y destino y el tiempo del viaje. Con el fin de mejorar la gestión, se propone anticipar la demanda que habrá en un determinado rango de tiempo. Teniendo en cuenta la franja horaria, el tipo de día (laborable o festivo), la climatología, etc. Las variables que contiene el data set son las siguientes:
+
+-   id: identificador (**variable cuantitativa discreta**)
+
+-   year: años (2011 y 2012) (**variable cuantitativa discreta**)
+
+-   hour: hora del día (0 to 23) (**variable cuantitativa discreta**)
+
+-   season: 1 = invierno, 2 = primavera, 3 = verano, 4 = otoño (**variable cuantitativa discreta**)
+
+-   holiday: si fue un día de vacaciones (**variable cuantitativa discreta**)
+
+-   workingday: si fue un día de trabajo (**variable cuantitativa discreta**)
+
+-   weather: tres categorías en rango de mejor a peor tiempo (1 a 3) (**variable cuantitativa discreta**)
+
+-   temp: temperatura en grados Celsius (**variable cuantitativa continua**)
+
+-   atemp: sensación de temperatura en grados Celsius (**variable cuantitativa continua**)
+
+-   humidity: humedad relativa (**variable cuantitativa continua**)
+
+-   windspeed: velocidad del viento (km/h) (**variable cuantitativa continua**)
+
+-   num_bikes: número total de bicicletas alquiladas en para esas condiciones (**variable cuantitativa discreta**)
 
 Por lo tanto, el objetivo es predecir la demanda de bicicletas en una serie de franjas horarias, empleando el siguiente conjunto de [datos](https://www.kaggle.com/datasets/aguado/bike-rental-data-set-uci).
 
@@ -16,10 +40,10 @@ El resto del documento se organiza de la siguiente forma: en la sección 1 se re
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
 
 ```{r}
-install.packages("visdat")
 library(tidyverse)
 library(visdat)
 library(ggplot2)
+library(corrplot)
 ```
 
 Carga del dataset: subconjuto de entrenamiento. Estudio de los datos tal y como se obtienen de ***Kaggle***. Como veremos los datos están todos en una columna separados por ";".
@@ -90,7 +114,7 @@ str(train_bikes)
 head(train_bikes)
 ```
 
-A pesar de que no hay outliers en la variable humedad, es un factor que puede afectar a la salud en un porcentaje menor al 30%. Por ello, vamos a eliminar todos los ejemplos cuya humedad registrada sea menor a esta.
+A pesar de que no hay outliers en la variable humedad, es un factor que puede afectar a la salud en un porcentaje menor al 30%. Por ello, vamos a eliminar todos los ejemplos cuya [humedad](https://es.wikipedia.org/wiki/Humedad_relativa) registrada sea menor a esta.
 
 ```{r}
 # Filtrado de dataframe
@@ -169,7 +193,7 @@ str(test_bikes)
 head(test_bikes)
 ```
 
-Al igual que anteriormente, eliminamos los ejemplos cuya humedad sea inferior a 30.
+Al igual que anteriormente, eliminamos los ejemplos cuya [humedad](https://es.wikipedia.org/wiki/Humedad_relativa) sea inferior a 30.
 
 ```{r}
 # Filtrado de dataframe
@@ -275,13 +299,15 @@ bikes_by_working_day <- train_bikes %>%
 bike_count <- bikes_by_working_day$total_bikes_by_working_day
 
 bike_percentage <- paste0(round(100 * bike_count/sum(bike_count), 2), "%")
+bike_count
+bike_percentage
 
 pie(bike_count, labels = bike_percentage)
 
 legend("topleft", legend = c( "No laboral", "Laboral"), fill =  c("white", "lightblue"))
 ```
 
-Porcentaje de bicicletas que se alquilan durante los días de vacaciones.
+Porcentaje medio de bicicletas que se alquilan si estamos en días de vacaciones o no.
 
 ```{r}
 
@@ -291,56 +317,123 @@ bikes_by_holiday <- train_bikes %>%
 
 bike_count <- bikes_by_holiday$total_bikes_by_holiday
 
-bike_percentage <- paste0(round(100 * bike_count/sum(bike_count), 2), "%")
+samples_holiday <- train_bikes %>%
+                    group_by(holiday) %>% 
+                      count()
 
-pie(bike_count, labels = bike_percentage)
+a_no_holiday <- bike_count[1]/samples_holiday[1,2]
 
-legend("topleft", legend = c( "No vacaciones", "Vacaciones"), fill =  c("white", "lightblue"))
-```
+a_holiday <- bike_count[2]/samples_holiday[2,2]
 
-¿Cuántas bicicletas se han alquilado según el año?
+a_bike_count <- data.frame(c(a_no_holiday, a_holiday))
 
-```{r}
+bike_percentage <- paste0(round(100 * a_bike_count/sum(a_bike_count), 2), "%")
 
-#bikes_by_year_hour <- train_bikes %>%
-#  group_by(hour) %>%
-#  group_by(year) %>%
-#  summarize(total_bikes_by_year_hour = sum(num_bikes))
+result <- data.frame(bike_percentage[1], bike_percentage[2])
+colnames(result) <- c("non vacation", "vacation")
 
-#hours <- c(0:23)
-#hours
-
-#ggplot(bikes_by_year_hour, aes(x = train_bikes$hour, y = total_bikes_by_year_hour, group = year)) + geom_line()
-```
-
-Porcentaje de bicicletas alquiladas según la hora del día.
-
-```{r}
-
-```
-
-Búsqueda de relación lineal: dibujar el número de bicicletas en función del resto de variables.
-
-```{r}
-```
-
-## Visualización
-
-Instalación de ggplot2
-
-```{r}
-# So, now...what do we looking for?
-```
-
-```{r}
-
+result
 ```
 
 ## Algoritmo lm()
 
-Modelo realizado con lm como en la práctica 3 (regresión).
+El conjunto de datos que se está tratando contiene más de dos variables cuantitativas que se deben emplear en la predicción de bicicletas. Para aplicar un modelo de regresión lineal multivariable es necesario realizar un estudio de la relación lineal existente entre las variables, en concreto el número de bicicletas (variable a predecir) en función del resto de columnas. El análisis comienza con la creación de un diagrama de dispersión que nos muestra la relación entre las variables.
 
-Y predicción con ese modelo.
+```{r}
+# Diagrama de dispersión para el número de bicicletas prente al resto de variables
+
+plot(num_bikes ~ ., train_bikes)
+```
+
+Observamos que no es adecuado aplicar modelos de regresión lineal, pues la distrubución no parece indicar una posible relación lineal entre las variables. A pesar de ello, estudiamos la [correlación](https://www.cienciadedatos.net/documentos/24_correlacion_y_regresion_lineal) entre las variables para conocer como de relacionadas están las columnas.
+
+Todos los valores del índice de correlación r varían entre [-1, 1], siendo -1 una correlación negativa perfecta y el 1 correlación positiva perfecta.
+
+-   correlación **nula**: r \< \|0.1\|
+
+-   correlación **pequeña**: \|0.1\| \< r \<= \|0.3\|
+
+-   correlación **mediana** : \|0.3\| \< r \<= \|0.5\|
+
+-   correlación **moderada** : \|0.5\| \< r \<= \|0.7\|
+
+-   correlación **alta o muy alta**: r \> \|0.7\|
+
+```{r}
+# Estudio de la normalización de las variables
+qqnorm(train_bikes$num_bikes, main = "Num bikes", col = "darkred")
+qqline(train_bikes$num_bikes)
+qqnorm(train_bikes$hour, main = "Hour", col = "blue")
+qqline(train_bikes$hour)
+```
+
+Debido a que las variables cuantitativas que contiene el dataset no se distrubuyen de forma normal. Se ha empleado el coeficiente de Spearman para el cálculo de la correlación.
+
+```{r}
+# Matriz de correlación entre las variables cuantitativas
+cor_datos_cuanti <- round(cor(train_bikes,  method = "spearman"), digits = 2)
+cor_datos_cuanti
+
+M <- round(cor(train_bikes,  method = "spearman"), digits=2)
+
+corrplot(M, method = "number", tl.cex = 0.7,number.cex = 0.8)  
+
+```
+
+Al examinar el mapa con los valores de la correlación tenemos que el mayor r obtenido es de 0.53, correlación moderada entre horas y número de bicicletas.
+
+Aunque aplicar un modelo de regresión lineal no tiene sentido para este conjunto de datos, se va generar el modelo lineal a modo de estudio del problema, con el fin de demostar que no aporta valor realizar una predicción de este tipo. En la siguiente sección, se indagará sobre modelos de regresión no lineal obteniendo unos mejores resultados.
+
+```{r}
+# Construcción del modelo en base al resto de variables 
+lm_bikes <- lm(num_bikes ~ ., data = train_bikes)
+
+# Resumen del modelo
+summary(lm_bikes)
+```
+
+Analizando el resumen del modelo, encontramos que *holiday*, *workingday*, *weather*, *temp* tienen bajo nivel de significancia. Por ello, vamos a omitir estas columnas tanto en la generación del modelo como en la posterior predicción.
+
+```{r}
+train_bikes_short <- select(train_bikes, -holiday, -workingday, -weather, -temp)
+
+head(train_bikes_short)
+```
+
+A pesar de eliminar estos atributos poco significativos, el valor de R-squared no varía.
+
+```{r}
+# Construcción del modelo en base al resto de variables 
+lm_bikes_short <- lm(num_bikes ~ ., data = train_bikes_short)
+
+# Resumen del modelo
+summary(lm_bikes_short)
+```
+
+```{r}
+plot(lm_bikes_short$fitted.values,  lm_bikes_short$residuals,
+     xlab = "Valores ajustados", ylab = "Residuos")
+```
+
+```{r}
+qqnorm(lm_bikes_short$residuals, ylab = "Cuantiles residuales")
+```
+
+Realizamos la predicción del número de bicicletas con el primer ejemplo del dataset.
+
+```{r}
+# Predecimos el número de bicicletas del primer ejemplo del dataset
+sample_1 <- train_bikes %>%
+  slice_head(n = 1) %>%
+  select(-holiday, -workingday, -weather, -temp)
+
+expected_value <- train_bikes %>%
+                    slice_head(n = 1)
+  
+expected_value[1, 11]
+predict(lm_bikes_short, sample_1)
+
+```
 
 ## Algoritmos Caret
 
