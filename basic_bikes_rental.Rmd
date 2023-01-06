@@ -33,7 +33,7 @@ Los sistemas de alquiler de bicicletas suelen recopilar información interesante
 
 Por lo tanto, el objetivo es predecir la demanda de bicicletas en una serie de franjas horarias, empleando el siguiente conjunto de [datos](https://www.kaggle.com/datasets/aguado/bike-rental-data-set-uci).
 
-El resto del documento se organiza de la siguiente forma: en la sección 1 se realiza un estudio de los datos y su prepocesamiento.
+El resto del documento se organiza de la siguiente forma: en la sección 1 se realiza un estudio de los datos y su preprocesamiento.
 
 ## Preprocesamiento y análisis de los datos
 
@@ -56,7 +56,7 @@ dim(bikes)
 
 #### Preprocesado de los datos
 
-En primer lugar, separamos los datos por ";" con el fin de tener las columnas separadas y poder preprocesar y análizar correctamente los datos. La función *summary* nos ofrece un resumen por cada una de las variables presentes en el dataset.
+En primer lugar, separamos los datos por ";" con el fin de tener las columnas separadas y poder preprocesar y analizar correctamente los datos. La función *summary* nos ofrece un resumen por cada una de las variables presentes en el dataset.
 
 ```{r}
 train_bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
@@ -66,7 +66,7 @@ dim(train_bikes)
 summary(train_bikes)
 ```
 
-Como podemos observar el atributo id no aporta información relevante, por lo que vamos a proceder a eliminarlo. Por otro lado, el atributo count no tiene un nombre representativo, lo sustituiremos por num_bikes.
+Como podemos observar el atributo id no aporta información relevante, por lo que vamos a proceder a eliminarlo. Por otro lado, el atributo *count* no tiene un nombre representativo, lo sustituiremos por *num_bikes*.
 
 ```{r}
 train_bikes <- select(train_bikes, -id)
@@ -135,13 +135,13 @@ range(train_bikes$workingday)
 range(train_bikes$weather)
 ```
 
-Dataframe preprocesado para identificación de valores perdidos, detección y eliminación de outliersy comprobación del rango en variables estáticas.
+Dataframe preprocesado para identificación de valores perdidos, detección y eliminación de outliers y comprobación del rango en variables estáticas.
 
 ```{r}
 summary(train_bikes)
 ```
 
-A continuación, se realiza el preprocesamiento para los datos de testeo.
+A continuación, se realiza el preprocesamiento para los datos del subconjunto de test.
 
 ```{r}
 test_bikes <- read.table("data/test.csv", na.strings="", header=TRUE, sep=";", dec=".")
@@ -277,7 +277,7 @@ ggplot(bikes_by_season, aes(x = season, y = total_bikes_by_season)) +
   geom_bar(stat = "identity")
 ```
 
-¿Cuántas bicicletas se han alquilado según el temporal?
+¿Cuántas bicicletas se han alquilado según el estado del tiempo?
 
 ```{r}
 bikes_by_weather <- train_bikes %>%
@@ -340,12 +340,12 @@ result
 El conjunto de datos que se está tratando contiene más de dos variables cuantitativas que se deben emplear en la predicción de bicicletas. Para aplicar un modelo de regresión lineal multivariable es necesario realizar un estudio de la relación lineal existente entre las variables, en concreto el número de bicicletas (variable a predecir) en función del resto de columnas. El análisis comienza con la creación de un diagrama de dispersión que nos muestra la relación entre las variables.
 
 ```{r}
-# Diagrama de dispersión para el número de bicicletas prente al resto de variables
+# Diagrama de dispersión para el número de bicicletas frente al resto de variables
 
 plot(num_bikes ~ ., train_bikes)
 ```
 
-Observamos que no es adecuado aplicar modelos de regresión lineal, pues la distrubución no parece indicar una posible relación lineal entre las variables. A pesar de ello, estudiamos la [correlación](https://www.cienciadedatos.net/documentos/24_correlacion_y_regresion_lineal) entre las variables para conocer como de relacionadas están las columnas.
+Observamos que no es adecuado aplicar modelos de regresión lineal, pues la distribución no parece indicar una posible relación lineal entre las variables. A pesar de ello, estudiamos la [correlación](https://www.cienciadedatos.net/documentos/24_correlacion_y_regresion_lineal) entre las variables para conocer como de relacionadas están las columnas.
 
 Todos los valores del índice de correlación r varían entre [-1, 1], siendo -1 una correlación negativa perfecta y el 1 correlación positiva perfecta.
 
@@ -367,7 +367,7 @@ qqnorm(train_bikes$hour, main = "Hour", col = "blue")
 qqline(train_bikes$hour)
 ```
 
-Debido a que las variables cuantitativas que contiene el dataset no se distrubuyen de forma normal. Se ha empleado el coeficiente de Spearman para el cálculo de la correlación.
+Debido a que las variables cuantitativas que contiene el dataset no se distribuyen de forma normal, se ha empleado el coeficiente de Spearman para el cálculo de la correlación.
 
 ```{r}
 # Matriz de correlación entre las variables cuantitativas
@@ -382,7 +382,7 @@ corrplot(M, method = "number", tl.cex = 0.7,number.cex = 0.8)
 
 Al examinar el mapa con los valores de la correlación tenemos que el mayor r obtenido es de 0.53, correlación moderada entre horas y número de bicicletas.
 
-Aunque aplicar un modelo de regresión lineal no tiene sentido para este conjunto de datos, se va generar el modelo lineal a modo de estudio del problema, con el fin de demostar que no aporta valor realizar una predicción de este tipo. En la siguiente sección, se indagará sobre modelos de regresión no lineal obteniendo unos mejores resultados.
+Aunque aplicar un modelo de regresión lineal no tiene sentido para este conjunto de datos, se va generar el modelo lineal a modo de estudio del problema, con el fin de demostrar que no aporta valor realizar una predicción de este tipo. En la siguiente sección, se indagará sobre modelos de regresión no lineal obteniendo unos mejores resultados.
 
 ```{r}
 # Construcción del modelo en base al resto de variables 
@@ -435,6 +435,8 @@ predict(lm_bikes_short, sample_1)
 
 ```
 
+Se puede observar que hay un importante desajuste en la predicción, siendo esta de 325 bicicletas para un valor esperado de 133.
+
 ## Algoritmos Caret
 
 En este punto, vamos a generar distintos modelos con varios métodos que incluye el paquete Caret. A partir de estos modelos, los cuales son creados a partir del subconjunto de entrenamiento, se procederá a la predicción del número de bicicletas alquiladas para cada uno de los ejemplos del subconjunto de prueba.
@@ -445,7 +447,7 @@ Antes de comenzar, se carga el paquete Caret.
 library(caret)
 ```
 
-A continuación, creamos la función de control mediante `trainControl`. Con esta función vamos a controlar cómo se crearán los modelos.
+A continuación, creamos la función de control mediante `trainControl`. Con esta función vamos a controlar cómo se entrenarán los modelos.
 
 ```{r}
 fitControl <- trainControl(
@@ -462,23 +464,62 @@ head(train_bikes)
 
 ### Random Forest
 
-Acto seguido, se procede a crear un primer modelo de regresión, utilizando el método Random Forest.
+Acto seguido, se procede a crear un primer modelo de regresión, utilizando el método Random Forest. Para ello, se ha decidido optar por parametrizar el argumento ntree con un valor de 5, ya que el algoritmo toma un tiempo de ejecución considerable para mayores superiores sin que tampoco mejore el rendimiento.
+
+También se ha optado por entrenar dos modelos y elegir el mejor: uno en el que se considere a todas las variables como predictoras, y otro en el que se eliminen aquellas menos significativas a priori, tal como se vio en el apartado anterior.
+
+En este primer paso también se opta por personalizar los parámetros del algoritmo Random Forest, pasando los parámetros como argumento tuneGrid.
 
 ```{r}
+rfGrid <- expand.grid(mtry = c(2,4,6,8,10))
+
 model_rf_reg <- train(num_bikes ~ .,
                       train_bikes,
                       method = "rf",
                       ntree = 5,
+                      tuneGrid = rfGrid,
                       trControl = fitControl)
 
 model_rf_reg
 ```
 
-A continuación, con el modelo obtenido, se realiza una predicción para algunos valores de prueba:
+En el segundo caso, se hace ejecuta el mismo algoritmo pero sin considerar los atributos holiday, workingday, weather y temp.
 
 ```{r}
-predict(model_rf_reg, newdata = head(test_bikes))
+rfGrid <- expand.grid(mtry = c(2,3,4,5,6))
+
+model_rf_reg2 <- train(num_bikes ~ .,
+                      train_bikes %>%
+                        select(-holiday, -workingday, -weather, -temp),
+                      method = "rf",
+                      ntree = 5,
+                      tuneGrid = rfGrid,
+                      trControl = fitControl)
+
+model_rf_reg2
 ```
+
+Como se puede observar, el mejor modelo obtenido limitando las variables predictoras no supera al que se obtiene cuando se las considera a todas.
+
+-   Modelo 1: R-squared de 0.9225
+
+-   Modelo 2: R-squared de 0.7301
+
+De este modo, se opta por el primer modelo para realizar una predicción de prueba, al igual que se hizo con la regresión lineal.
+
+```{r}
+# Predecimos el número de bicicletas del primer ejemplo del dataset
+sample_1 <- train_bikes %>%
+  slice_head(n = 1)
+
+expected_value <- train_bikes %>%
+                    slice_head(n = 1)
+  
+expected_value[1, 11]
+predict(model_rf_reg, sample_1)
+```
+
+A través del modelo generado con Random Forest se obtiene una predicción algo más ajustada al caso esperado, indicando 148 bicicletas alquiladas para las 133 esperadas por el caso real.
 
 ### xgbTree
 
@@ -494,17 +535,38 @@ model_xgbTree <- train(
 model_xgbTree
 ```
 
-### glmnet
+### gbm
 
 ```{r}
-model_glmnet_reg <- train(
-  num_bikes ~ .,
-  bikes_train_set,
-  tuneGrid = expand.grid(alpha = 0:1, lambda = seq(0.0001, 1, length = 20)),
-  method = "glmnet",
-  trControl = fitControl)
+gbmGrid <- expand.grid(
+  interaction.depth = c(4, 8),
+  n.trees = c(250, 350),
+  shrinkage = c(0.06, 0.1, 0.2),
+  n.minobsinnode = 10
+)
 
-model_glmnet_reg
+model_gbm_reg <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "gbm",
+  tuneGrid = gbmGrid,
+  trControl = fitControl)
+```
+
+```{r}
+model_gbm_reg
+```
+
+```{r}
+# Predecimos el número de bicicletas del primer ejemplo del dataset
+sample_1 <- train_bikes %>%
+  slice_head(n = 1)
+
+expected_value <- train_bikes %>%
+                    slice_head(n = 1)
+  
+expected_value[1, 11]
+predict(model_gbm_reg, sample_1)
 ```
 
 ## Comparativa de modelos
