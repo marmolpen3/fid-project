@@ -3,16 +3,126 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code.
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*.
-
 ```{r}
-plot(cars)
+library(tidyverse)
+library(visdat)
+library(ggplot2)
+library(corrplot)
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+train_bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
+head(train_bikes)
+```
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+## Preprocesado
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+```{r}
+train_bikes <- select(train_bikes, -id)
+names(train_bikes)[11] <- "num_bikes"
+head(train_bikes)
+```
+
+Tal y como ya hemos visto en el anterior notebook, el dataset está limpio de valores NA pero se observan algunos outliers en la variable de *windspeed*. Por tanto, pasamos a la eliminación de dichos valores.
+
+```{r}
+# Outliers en windspeed por encima de 32 km/h
+outlier_min <- min(boxplot.stats(train_bikes$windspeed)$out)
+
+bikes_without_liers <- train_bikes$windspeed[train_bikes$windspeed < outlier_min]
+
+# Comprobación
+boxplot(bikes_without_liers, horizontal = TRUE)
+boxplot.stats(bikes_without_liers)
+
+# Filtrado de dataframe
+train_bikes <- filter(train_bikes, train_bikes$windspeed < outlier_min)
+
+str(train_bikes)
+head(train_bikes)
+```
+
+Finalmente, filtramos aquellos ejemplos que tienen una humedad menor que 30, ya que suponen un riesgo para la salud. (Visitar para más información sobre la [humedad](https://es.wikipedia.org/wiki/Humedad_relativa)).
+
+```{r}
+# Filtrado de dataframe
+train_bikes <- filter(train_bikes, train_bikes$humidity > 30)
+
+# Comprobación
+boxplot(train_bikes$humidity, horizontal = TRUE)
+```
+
+```{r}
+summary(train_bikes)
+```
+
+## Clustering
+
+```{r}
+train_bikes_short <- subset(train_bikes, train_bikes$year == 2011)
+```
+
+```{r}
+train_bikes_short <- select(train_bikes_short, -year, -holiday, -workingday, -weather, -temp)
+
+head(train_bikes_short)
+```
+
+Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
+
+```{r}
+lapply(train_bikes_short, class)
+```
+
+Utilizamos la función *summary* para estudiar la distribución de los datos.
+
+```{r}
+summary(train_bikes_short)
+```
+
+Observamos que los datos no están distribuidos. Usamos la función *scale* para para distribuirlos y poder aplicar clustering.
+
+```{r}
+scaled_bikes <- scale(train_bikes_short)
+
+summary(scaled_bikes)
+```
+
+Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo **k-means** con el fin de identificar similitudes entre los ejemplos.
+
+```{r}
+# Aseguramos la reproducibilidad 
+seed_val = 50
+set.seed(seed_val)
+# Cinco clusters
+k = 4
+# Primera ejecución del k-Means
+bikes_clust = kmeans(scaled_bikes, centers = k, nstart = 1)
+# Vemos cuantos pacientes hay en cada grupo
+bikes_clust$size
+```
+
+```{r}
+# Añadimos columnas adicionales
+train_bikes_short['bikes_clust'] = bikes_clust$cluster
+
+# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
+plot_one = ggplot(train_bikes_short, aes(x=windspeed, y=atemp, color=as.factor(bikes_clust))) + geom_point()
+plot_one 
+```
+
+```{r}
+# Añadimos columnas adicionales
+train_bikes_short['bikes_clust'] = bikes_clust$cluster
+
+# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
+plot_one = ggplot(train_bikes_short, aes(x=hour, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+plot_one 
+```
+
+```{r}
+# executing hierarchical clustering with complete linkage
+hier_clust_1 = hclust(dist(scaled_bikes), method= 'complete')
+# printing the dendrogram
+plot(hier_clust_1)
+```
