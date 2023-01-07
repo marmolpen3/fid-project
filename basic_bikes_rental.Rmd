@@ -46,7 +46,7 @@ library(ggplot2)
 library(corrplot)
 ```
 
-Carga del dataset: subconjuto de entrenamiento. Estudio de los datos tal y como se obtienen de ***Kaggle***. Como veremos los datos están todos en una columna separados por ";".
+Carga del dataset: subconjunto de entrenamiento. Estudio de los datos tal y como se obtienen de ***Kaggle***. Como veremos los datos están todos en una columna separados por ";".
 
 ```{r}
 bikes <- read.csv("data/train.csv")
@@ -478,7 +478,8 @@ model_rf_reg <- train(num_bikes ~ .,
                       method = "rf",
                       ntree = 5,
                       tuneGrid = rfGrid,
-                      trControl = fitControl)
+                      trControl = fitControl,
+                      metric = "Rsquared")
 
 model_rf_reg
 ```
@@ -494,7 +495,8 @@ model_rf_reg2 <- train(num_bikes ~ .,
                       method = "rf",
                       ntree = 5,
                       tuneGrid = rfGrid,
-                      trControl = fitControl)
+                      trControl = fitControl,
+                      metric = "Rsquared")
 
 model_rf_reg2
 ```
@@ -505,21 +507,31 @@ Como se puede observar, el mejor modelo obtenido limitando las variables predict
 
 -   Modelo 2: R-squared de 0.7301
 
+```{r}
+resamps_rf <- resamples(list(
+  RF1 = model_rf_reg,
+  RF2 = model_rf_reg2
+))
+
+summary(resamps_rf, metric = "Rsquared")
+bwplot(resamps_rf, metric = "Rsquared")
+```
+
 De este modo, se opta por el primer modelo para realizar una predicción de prueba, al igual que se hizo con la regresión lineal.
 
 ```{r}
 # Predecimos el número de bicicletas del primer ejemplo del dataset
 sample_1 <- train_bikes %>%
-  slice_head(n = 1)
+  slice_head(n = 6)
 
 expected_value <- train_bikes %>%
-                    slice_head(n = 1)
+                    slice_head(n = 6)
   
-expected_value[1, 11]
-predict(model_rf_reg, sample_1)
+expected_value[1:6, 11]
+floor(predict(model_rf_reg, sample_1))
 ```
 
-A través del modelo generado con Random Forest se obtiene una predicción algo más ajustada al caso esperado, indicando 148 bicicletas alquiladas para las 133 esperadas por el caso real.
+A través del modelo generado con Random Forest se obtiene una predicción algo más ajustada al caso esperado. Por seguir con el primer ejemplo del conjunto de entrenamiento, la predicción indica 148 bicicletas alquiladas para las 133 esperadas por el caso real.
 
 ### xgbTree
 
@@ -537,36 +549,93 @@ model_xgbTree
 
 ### gbm
 
-```{r}
-gbmGrid <- expand.grid(
-  interaction.depth = c(4, 8),
-  n.trees = c(250, 350),
-  shrinkage = c(0.06, 0.1, 0.2),
-  n.minobsinnode = 10
-)
+En este caso se utiliza el algoritmo Stochastic Gradient Boosting mediante el método gbm del paquete Caret. Aquí se ha optado por ver qué modelo retorna el método sin parametrizar, con los valores por defecto y, posteriormente, ver cómo rinde el modelo generado tras imputar de forma personalizada los valores de los parámetros del algoritmo.
 
+En este primer fragmento de código, se utilizan los parámetros por defecto.
+
+```{r}
 model_gbm_reg <- train(
   num_bikes ~ .,
   train_bikes,
   method = "gbm",
-  tuneGrid = gbmGrid,
-  trControl = fitControl)
-```
+  trControl = fitControl,
+  metric = "Rsquared",
+  verbose = FALSE)
 
-```{r}
 model_gbm_reg
 ```
 
 ```{r}
+densityplot(model_gbm_reg, pch="|")
+```
+
+El modelo se obtiene fijando el learning rate (shrinkage) constante a 0.1 para 150 árboles y un máximo de nodos por árbol de 3, parámetros n.tree e interaction.depth respectivamente.
+
+El R-squared obtenido es de 0.8654 para este caso.
+
+Acto seguido, se genera un segundo modelo parametrizado, basándonos en las investigaciones que se han realizado para este algoritmo: [referencia 1](https://www.listendata.com/2015/07/gbm-boosted-models-tuning-parameters.html) y [referencia 2](https://stackoverflow.com/questions/15613332/using-caret-package-to-find-optimal-parameters-of-gbm).
+
+El shrinkage corresponde al learning rate, lo que se puede considerar la velocidad de aprendizaje del algoritmo. Este parámetro está relacionado con el tamaño del conjunto de ejemplos de entrenamiento: el learning rate debe ser pequeño en datasets pequeños y utilizar un valor de 0.1 (el valor por defecto) para conjuntos que superen los 10.000 registros.
+
+Por otro lado, a menor learning rate, mayor deberá ser el número de árboles, esto es, el valor del parámetro n.tree, por lo que el parámetro se ajustará en un rango y se tomará el mejor valor. Aunque a mayor número de árboles también se obtiene una mejora en la reducción del error, también se incurre en un posible sobreajuste del modelo.
+
+Por último, el valor de interaction.depth suele ser un valor bajo, pero en [referencia 2](https://stackoverflow.com/questions/15613332/using-caret-package-to-find-optimal-parameters-of-gbm) se recomienda utilizar la fórmula que, finalmente, se aplica en el siguiente fragmente de código, donde se genera el nuevo modelo.
+
+```{r}
+# Fórmulas obtenidas en la referencia 2
+shrinkage <- max(0.01, 0.1 * min(1, nrow(train_bikes) / 10000))
+interaction.depth <- floor(sqrt(ncol(train_bikes)))
+
+# Ajuste de parámetros personalizados
+gbmGrid <- expand.grid(
+  interaction.depth = interaction.depth,
+  n.trees = (1:10)*25,
+  shrinkage = shrinkage,
+  n.minobsinnode = 10
+)
+
+model_gbm_reg2 <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "gbm",
+  tuneGrid = gbmGrid,
+  trControl = fitControl,
+  metric = "Rsquared",
+  verbose = FALSE)
+
+model_gbm_reg2
+```
+
+```{r}
+densityplot(model_gbm_reg2, pch="|")
+```
+
+Por último, podemos ver qué modelo es mejor de los dos obtenidos con el método gbm.
+
+```{r}
+resamps_gbm <- resamples(list(
+  GBM1 = model_gbm_reg,
+  GBM2 = model_gbm_reg2
+))
+
+summary(resamps_gbm, metric = "Rsquared")
+bwplot(resamps_gbm, metric = "Rsquared")
+```
+
+Tras esto, nos decantamos por el segundo modelo, el cual se obtiene ajustando los parámetros. Finalmente, realizamos también una estimación de prueba como en los casos anteriores.
+
+```{r}
 # Predecimos el número de bicicletas del primer ejemplo del dataset
 sample_1 <- train_bikes %>%
-  slice_head(n = 1)
+  slice_head(n = 6)
 
 expected_value <- train_bikes %>%
-                    slice_head(n = 1)
+                    slice_head(n = 6)
   
-expected_value[1, 11]
-predict(model_gbm_reg, sample_1)
+expected_value[1:6, 11]
+floor(predict(model_gbm_reg2, sample_1))
 ```
+
+Se puede concluir este apartado comentando la mejora en la predicción, aunque se siguen observando algunos desajustes.
 
 ## Comparativa de modelos
