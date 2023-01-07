@@ -535,20 +535,6 @@ floor(predict(model_rf_reg, sample_1))
 
 A través del modelo generado con Random Forest se obtiene una predicción algo más ajustada al caso esperado. Por seguir con el primer ejemplo del conjunto de entrenamiento, la predicción indica 148 bicicletas alquiladas para las 133 esperadas por el caso real.
 
-### xgbTree
-
-```{r}
-model_xgbTree <- train(
-  num_bikes ~ .,
-  bikes_train_set,
-  method = "xgbTree",
-  trControl = fitControl)
-```
-
-```{r}
-model_xgbTree
-```
-
 ### gbm
 
 En este caso se utiliza el algoritmo Stochastic Gradient Boosting mediante el método gbm del paquete Caret. Aquí se ha optado por ver qué modelo retorna el método sin parametrizar, con los valores por defecto y, posteriormente, ver cómo rinde el modelo generado tras imputar de forma personalizada los valores de los parámetros del algoritmo.
@@ -641,5 +627,159 @@ floor(predict(model_gbm_reg2, sample_1))
 ```
 
 Se puede concluir este apartado comentando la mejora en la predicción, aunque se siguen observando algunos desajustes.
+
+### xgbTree
+
+Una de las librerías más populares de aprendizaje automático, y que ha demostrado una gran eficiencia y escalabilidad es XGBoost. El paquete caret incluye entre sus funciones una implementación de la API de XGBoost para R. Se trata de la función xgbTree.
+
+Como tercera opción a comparar, se va a hacer uso de este método, tomando como punto de partida el modelo por defecto con todas las variables predictoras.
+
+```{r}
+model_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  trControl = fitControl)
+```
+
+```{r}
+model_xgbTree
+```
+
+El modelo resultante obtenido fija como parámetros de afinación 150 árboles, con una profundidad máxima 3, tasa de aprendizaje de 40% y un 80% de las columnas usadas por árbol.
+
+Además, el parámetro min_child_weight indica la cantidad mínima de datos que deben estar presentes en los nodos hoja del árbol. Esto significa que si un nodo tiene un peso menor que el valor especificado, se convertirá en un nodo hoja y no se dividirá más. Por tanto cuanto mayor sea este valor, más simple será el árbol resultante. En este caso el valor es 1.
+
+Por último, el parámetro subsample representa el porcentaje de observaciones a usar en cada iteración del entrenamiento, que corresponde al 100%.
+
+```{r}
+default_tune_grid <- expand.grid(
+  nrounds = 150,
+  max_depth = 3,
+  eta = 0.4,
+  gamma = 0,
+  colsample_bytree = 0.8,
+  min_child_weight = 1,
+  subsample = 1
+  )
+
+model_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = default_tune_grid,
+  trControl = fitControl)
+
+model_xgbTree
+```
+
+El R-squared obtenido es de 0.9176 para este caso.
+
+A continuación, se procede a realizar una serie de combinaciones de los parámetros comentados anteriormente para mejorar el error:
+
+```{r}
+tune_grid = expand.grid(
+  nrounds = 150,
+  max_depth = 5,
+  eta = 0.1,
+  gamma = 0,
+  colsample_bytree = 0.8,
+  min_child_weight = 1,
+  subsample = 0.8
+  )
+
+model_tuned_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = tune_grid,
+  trControl = fitControl)
+
+model_tuned_xgbTree
+```
+
+```{r}
+tune_grid = expand.grid(
+  nrounds = 150,
+  max_depth = 7,
+  eta = 0.1,
+  gamma = 0.8,
+  colsample_bytree = 1,
+  min_child_weight = 0,
+  subsample = 1
+  )
+
+model_tuned_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = tune_grid,
+  trControl = fitControl)
+
+model_tuned_xgbTree
+```
+
+Tras ejecutar diferentes pruebas se consigue optimizar el R-squared hasta un valor de 0.943 aproximandamente.
+
+Para ello, se han aplicado los siguientes parámetros de afinación: 150 árboles, con profundidad máxima 7, tasa de aprendizaje del 10%, el 100% de columnas usadas por árbol y un 100% de observaciones usadas en cada iteración del entrenamiento.
+
+Aunque aumenta la complejidad con respecto al modelo anterior, también aumenta la precisión, como se puede observar en el valor de R-squared.
+
+Por último, se comprueba si el algoritmo mejora los resultados sin considerar los atributos holiday, workingday, weather y temp. El valor de R-squared disminuye en la misma medida que se comprobó para el modelo Random Forest.
+
+```{r}
+model_tuned_xgbTree_2 <- train(
+  num_bikes ~ .,
+  train_bikes %>%
+    select(-holiday, -workingday, -weather, -temp),
+  method = "xgbTree",
+  tuneGrid = expand.grid(
+    nrounds = 150, max_depth = 7, eta = 0.1, gamma = 0.8, colsample_bytree = 1, min_child_weight = 0, subsample = 1
+  ),
+  trControl = fitControl)
+
+model_tuned_xgbTree_2
+```
+
+Tras probar a eliminar los atributos realizando combinaciones diferentes, se observa que manteniendo los atributos weather y workingday, el valor de R-squared se mantiene relativamente estable, aunque no alcanza al obtenido sin eliminar variables.
+
+```{r}
+model_tuned_xgbTree_3 <- train(
+  num_bikes ~ .,
+  train_bikes %>%
+    select(-holiday, -temp),
+  method = "xgbTree",
+  tuneGrid = expand.grid(
+    nrounds = 150, max_depth = 7, eta = 0.1, gamma = 0.8, colsample_bytree = 1, min_child_weight = 0, subsample = 1
+  ),
+  trControl = fitControl)
+
+model_tuned_xgbTree_3
+```
+
+Finalmente, al evaluar los modelos que se han creado, se obtiene que el mejor modelo es el que tiene aplicados los parámetros de afinación y eliminadas las variables holiday y temp (TUNED_XGB3).
+
+```{r}
+resamps_rf <- resamples(list(
+  DEFAULT_XGB = model_xgbTree,
+  TUNED_XGB = model_tuned_xgbTree,
+  TUNED_XGB2 = model_tuned_xgbTree_2,
+  TUNED_XGB3 = model_tuned_xgbTree_3
+))
+summary(resamps_rf, metric = "Rsquared")
+bwplot(resamps_rf, metric = "Rsquared")
+```
+
+Aquí se representa la predicción correspondiente modelo seleccionado:
+
+```{r}
+predict(model_tuned_xgbTree_3, newdata = head(train_bikes))
+
+plot(x=predict(model_tuned_xgbTree_3), y= train_bikes$num_bikes,
+     xlab='Predicted Values',
+     ylab='Actual Values',
+     main='Predicted vs. Actual Values')
+abline(a = 0, b = 1, col = "red", lwd = 2)
+```
 
 ## Comparativa de modelos
