@@ -12,7 +12,7 @@ install.packages("NbClust")
 install.packages("factoextra")
 ```
 
-Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización y de **NbClust** y **factoextra** para clustering.
 
 ```{r}
 library(tidyverse)
@@ -112,7 +112,7 @@ scaled_bikes <- scale(train_bikes_short)
 summary(scaled_bikes)
 ```
 
-#### Clustering No jerarquizado
+#### Clustering Particional
 
 Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*. Se omite la ejecución con el modelo *gap_stat* por ser costoso al no converger los datos, el resultado obtenido es que el número de clusters óptimo es K = 10.
 
@@ -186,13 +186,13 @@ fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = bikes_clust$cluster)
 
 De estas gráficas podemos obtener algunas conclusiones:
 
--   Cluster 1: Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
+-   Cluster 1 (núm ejemplos: 686) : Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
 
--   Cluster 2: Se dan todas las condiciones para que se alquilen más bicicletas, buen tiempo, buena temperatura, humedad óptima y en primavera, verano u otoño.
+-   Cluster 2 (núm ejemplos: 1314) : Se dan todas las condiciones para que se alquilen más bicicletas, buen tiempo, buena temperatura, humedad óptima y en primavera, verano u otoño.
 
--   Cluster 3: Su principal característica es que son datos que pertenecen a la estación de invierno y por tanto, el número de bicicletas que se alquilan son menos durante el día.
+-   Cluster 3 (núm ejemplos: 740) : Su principal característica es que son datos que pertenecen a la estación de invierno y por tanto, el número de bicicletas que se alquilan son menos durante el día.
 
--   Cluster 4: Ejemplos que suelen encontrarse entre las 12pm y las 6am.
+-   Cluster 4 (núm ejemplos: 909) : Ejemplos que suelen encontrarse entre las 12pm y las 6am.
 
 -   Las horas en las que se alquilan menos bicicletas son de 12pm a 6am y normalmente suele darse en primavera, verano y otoño, rara vez en invierno. Suelen tener buenas condiciones temporales.
 
@@ -268,8 +268,8 @@ Importamos los datos y damos un primer vistazo.
 
 ```{r}
 country_data <- read_csv("data/Country-data.csv", show_col_types = FALSE)
-head(data)
-summary (data)
+head(country_data)
+summary (country_data)
 ```
 
 Procedemos a realizar un búsqueda de valores perdidos.
@@ -354,7 +354,9 @@ country_data_scale <- scale(country_data_df)
 summary(country_data_scale)
 ```
 
-Una vez escalados los datos, vamos a aplicar el algoritmo **k-means** para identificar similitudes entre los ejemplos. Comenzamos determinando el número de centros que debemos emplear en el algoritmo. Utilizamos los métodos *silhouette, wss o gap_stat* para llegar a una conclusión.
+#### Clustering Particional
+
+Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar los paises más necesitados. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*.
 
 ```{r}
 fviz_nbclust(country_data_scale, FUN = hcut, method = "silhouette")
@@ -362,31 +364,29 @@ fviz_nbclust(country_data_scale, FUN = hcut, method = "wss")
 fviz_nbclust(country_data_scale, FUN = hcut, method = "gap_stat")
 ```
 
-Con el algoritmo *silhouette*, obtenemos que el número de centros ideal sería de 2.
-
-El algoritmo *wss*, nos dice que, aproximadamente, entre 2 y 5 serían el número de centros ideales.
-
-Y por último el algoritmo *gap_stat*, nos indica que 3 es la mejor aproximación.
+Con el algoritmo *silhouette*, obtenemos que el número de centros ideal sería de 2. El algoritmo *wss*, nos dice que, aproximadamente, entre 2 y 5 serían el número de centros ideales. Por último, el algoritmo *gap_stat*, nos indica que 3 es la mejor aproximación.
 
 Por tanto, realizando una media entre los valores obtenidos en cada algoritmo, hemos decidido seleccionar 3 centros.
 
 ```{r}
-# Aseguramos la reproducibilidad 
-seed_val = 50
+# Aseguramos la reproducibilidad, establecemos la semilla del generador de números aleatorios
+seed_val <- 10
 set.seed(seed_val)
 # Número de clusters
 k = 3
-# Primera ejecución del k-Means
-country_clust = kmeans(country_data_scale, centers = k, nstart = 20)
+# Ejecutamos k-Means
+country_clust = kmeans(country_data_scale, centers = k)
 # Ejemplos por grupos
 country_clust$size
 ```
 
-```{r}
-# Añadimos columnas adicionales
-country_data_scale['country_clust'] = country_clust$cluster
+El número de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 3. Realizamos un análisis con mayor profundidad a través de gráficas.
 
-# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
-plot_one = ggplot(country_data_scale, aes(x=windspeed, y=atemp, color=as.factor(country_clust))) + geom_point()
-plot_one
+```{r}
+# Añadimos la columna adicional con el número del cluster al que pertenece cada ejemplo
+country_clust['country_clust'] = country_clust$cluster
+
+# Creamos una gráfica usando como ejes la hora y el número de bicicletas
+plot_one <- ggplot(country_data_df, aes(x=child_mort, y=gdpp, color=as.factor(country_clust))) + geom_point()
+plot_one 
 ```
