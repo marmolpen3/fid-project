@@ -141,26 +141,31 @@ plot_one
 ```
 
 ```{r}
+# Creamos una gráfica usando como ejes la temporada y el número de bicicletas
 plot_one <- ggplot(train_bikes_short, aes(x=season, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
+# Creamos una gráfica usando como ejes las vacaciones y el número de bicicletas
 plot_one <- ggplot(train_bikes_short, aes(x=holiday, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
+# Creamos una gráfica usando como ejes la sensación de temperatura y el número de bicicletas
 plot_one <- ggplot(train_bikes_short, aes(x=atemp, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
+# Creamos una gráfica usando como ejes el tiempo y el número de bicicletas
 plot_one <- ggplot(train_bikes_short, aes(x=weather, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
+# Creamos una gráfica usando como ejes la humedad y el número de bicicletas
 plot_one <- ggplot(train_bikes_short, aes(x=humidity, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one
 ```
