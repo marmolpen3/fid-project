@@ -10,6 +10,7 @@ install.packages("ggplot2")
 install.packages("corrplot")
 install.packages("NbClust")
 install.packages("factoextra")
+install.packages("ape")
 ```
 
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización, de **corrplot** para la correlación de las variables y de **NbClust** y **factoextra** para clustering.
@@ -18,9 +19,10 @@ Instalación de ***tidyverse*** para la manipulación de los datos y la visualiz
 library(tidyverse)
 library(visdat)
 library(ggplot2)
+library(corrplot)
 library(NbClust)
 library(factoextra)
-library(corrplot)
+library(ape)
 ```
 
 # Introducción
@@ -185,6 +187,18 @@ plot_one
 fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = bikes_clust$cluster), labels = 5)
 ```
 
+```{r}
+summary_bikes_kmeans <- train_bikes_short %>%
+    group_by(bikes_clust) %>% 
+    summarise(n = n(),
+              atemp = mean(atemp), 
+              humidity = mean(humidity), 
+              windspeed = mean(windspeed), 
+              num_bikes = mean(num_bikes))
+
+summary_bikes_kmeans
+```
+
 De estas gráficas podemos obtener algunas conclusiones:
 
 -   Cluster 1 (núm ejemplos: 686) : Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
@@ -334,11 +348,11 @@ M <- round(cor(cor_country_data,  method = "spearman"), digits=2)
 corrplot(M, method = "number", tl.cex = 0.7,number.cex = 0.8) 
 ```
 
-Se puede observar la gran correlación existente entre todas las variables, tanto negativa como positiva.
+Se puede observar la gran correlación existente entre todas las variables, tanto correlación negativa como positiva.
 
 ## Clustering
 
-El objetivo de someter a los datos a un estudio de clustering es obtener los países que tienen las mísmas características. Primero, nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
+El objetivo de someter los datos a un estudio de clustering es obtener los países que tienen las mísmas características, en concreto aquellos que presentan una mayor precariedad. Primero, nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
 
 ```{r}
 lapply(country_data_df, class)
@@ -387,12 +401,29 @@ country_clust$size
 El número de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 3. Realizamos un análisis con mayor profundidad a través de gráficas.
 
 ```{r}
-# Añadimos la columna adicional con el número del cluster al que pertenece cada ejemplo
-country_clust['country_clust'] = country_clust$cluster
+fviz_cluster(list(data = as.matrix(country_data_scale), cluster = country_clust$cluster), labels = 5)
 ```
 
+¿Qué características media tiene cada cluster? Analizamos las variables de los países por agrupación.
+
 ```{r}
-fviz_cluster(list(data = as.matrix(country_data_scale), cluster = country_clust$cluster), labels = 5)
+
+kmeans_data <- mutate(country_data_df, group_kmeans = country_clust$cluster)
+
+mean_kmeans <- kmeans_data %>%
+    group_by(group_kmeans) %>% 
+    summarise(n = n(),
+        child_mort = mean(child_mort),
+        exports = mean(exports),
+        health = mean(health),
+        imports = mean(imports),
+        income = mean(income),
+        inflation = mean(inflation),
+        life_expec = mean(life_expec),
+        total_fer = mean(total_fer),
+        gdpp = mean(gdpp))
+
+mean_kmeans
 ```
 
 #### Clustering Jerárquico
@@ -411,20 +442,41 @@ plot(hier_clust_c_complete, cex = 0.6, hang = -1)
 
 ```
 
-En este caso, observamos en la altura 6-8 tres agrupaciones de datos que son similares entre sí.
+En este caso, observamos en la altura 6-8 tres agrupaciones de datos que son similares entre sí. Visualizamos los clustering aplicando [plot.phylo](http://www.sthda.com/english/wiki/beautiful-dendrogram-visualizations-in-r-5-must-known-methods-unsupervised-machine-learning).
 
 ```{r}
+sample_c_clusters <- cutree(hier_clust_c_complete, k = 3)
 
-plot(hier_clust_c_complete, cex = 0.6, hang = -1)
-rect.hclust(hier_clust_c_complete, k = 3, border = 2:4)
-
+colors = c("red", "blue", "green")
+plot(as.phylo(hier_clust_c_complete), type = "fan", tip.color = colors[sample_c_clusters],
+     label.offset = 1, cex = 0.5)
 ```
 
 Los resultados obtenidos tienen similitud con los conseguidos por **K-means**.
 
 ```{r}
-sample_c_clusters <- cutree(hier_clust_c_complete, k = 3)
 fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters), labels = 5)
+```
+
+```{r}
+
+sample_c_clusters_df <- data.frame(sample_c_clusters)
+contry_data_clust_df <- cbind(country_data_df, sample_c_clusters_df)
+
+mean_data_complete <- contry_data_clust_df %>%
+  group_by(sample_c_clusters) %>%
+    summarise(n = n(),
+        child_mort = mean(child_mort),
+        exports = mean(exports),
+        health = mean(health),
+        imports = mean(imports),
+        income = mean(income),
+        inflation = mean(inflation),
+        life_expec = mean(life_expec),
+        total_fer = mean(total_fer),
+        gdpp = mean(gdpp))
+
+mean_data_complete 
 ```
 
 #### Clustering Jerárquico: Single
@@ -432,20 +484,47 @@ fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clust
 Al igual que el anterior, el dendograma obtenido al aplicar el clustering jerárquico nos permite vincular los grupos a los que pertenecen los ejemplos.
 
 ```{r}
-
 hier_clust_c_single <- hclust(dist(country_data_scale), method= 'single')
 
 plot(hier_clust_c_single, cex = 0.6, hang = -1)
 ```
 
 ```{r}
-plot(hier_clust_c_single, cex = 0.6, hang = -1)
-rect.hclust(hier_clust_c_single, k = 3, border = 2:4)
+sample_c_clusters <- cutree(hier_clust_c_single, k = 3)
+
+colors = c("red", "blue", "green")
+plot(as.phylo(hier_clust_c_single), type = "fan", tip.color = colors[sample_c_clusters],
+     label.offset = 1, cex = 0.5)
 ```
 
 Los resultados obtenidos no se parecen al los anteriores modelos aplicados.
 
 ```{r}
-sample_c_clusters <- cutree(hier_clust_c_single, k = 3)
 fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters), labels = 5)
 ```
+
+```{r}
+sample_c_clusters_df <- data.frame(sample_c_clusters)
+contry_data_clust_df <- cbind(country_data_df, sample_c_clusters_df)
+
+mean_data_complete <- contry_data_clust_df %>%
+  group_by(sample_c_clusters) %>%
+    summarise(n = n(),
+        child_mort = mean(child_mort),
+        exports = mean(exports),
+        health = mean(health),
+        imports = mean(imports),
+        income = mean(income),
+        inflation = mean(inflation),
+        life_expec = mean(life_expec),
+        total_fer = mean(total_fer),
+        gdpp = mean(gdpp))
+
+mean_data_complete 
+```
+
+#### Conclusiones
+
+Si observamos los resultados obtenidos aplicando los diferentes modelos podemos deducir que el **Clustering Jerárquico** con método **Single** es el que peores resultados obtiene, puesto que dos de los clusters contienen un único ejemplo, aspecto que no consideramos correcto porque existen bastantes países subdesarrollados en el dataset.
+
+Sin embargo, tanto el algoritmo **k-means** como el **Clustering Jerárquico** con método **Complete** consiguen unos resultados con mayor calidad.
