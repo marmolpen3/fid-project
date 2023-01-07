@@ -527,7 +527,9 @@ sample_1 <- train_bikes %>%
 expected_value <- train_bikes %>%
                     slice_head(n = 6)
   
+cat("Valores originales:\n")
 expected_value[1:6, 11]
+cat("Predicción:\n")
 floor(predict(model_rf_reg, sample_1))
 ```
 
@@ -589,7 +591,7 @@ interaction.depth <- floor(sqrt(ncol(train_bikes)))
 # Ajuste de parámetros personalizados
 gbmGrid <- expand.grid(
   interaction.depth = interaction.depth,
-  n.trees = (1:10)*25,
+  n.trees = (1:10)*50,
   shrinkage = shrinkage,
   n.minobsinnode = 10
 )
@@ -631,8 +633,10 @@ sample_1 <- train_bikes %>%
 
 expected_value <- train_bikes %>%
                     slice_head(n = 6)
-  
+
+cat("Valores originales:\n")  
 expected_value[1:6, 11]
+cat("Predicción:\n")
 floor(predict(model_gbm_reg2, sample_1))
 ```
 
