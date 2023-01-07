@@ -643,3 +643,74 @@ floor(predict(model_gbm_reg2, sample_1))
 Se puede concluir este apartado comentando la mejora en la predicción, aunque se siguen observando algunos desajustes.
 
 ## Comparativa de modelos
+
+En esta última sección se va a proceder a comparar los modelos generados y seleccionados con los distintos métodos incluidos en el paquete Caret que han sido utilizados previamente.
+
+Para esto, se utilizará la función resamples y se observará qué modelo ofrece mejor rendimiento y un menor error.
+
+```{r}
+resamps <- resamples(list(
+  RF = model_rf_reg,
+  GBM = model_gbm_reg2
+))
+
+summary(resamps)
+```
+
+Vamos a observar el rendimiento en base a dos métricas: R-squared y RMSE.
+
+```{r}
+summary(resamps, metric = "Rsquared")
+bwplot(resamps, metric = "Rsquared")
+```
+
+```{r}
+summary(resamps, metric = "RMSE")
+bwplot(resamps, metric = "RMSE")
+```
+
+En función tanto del valor R-squared como del RMSE, Random Forest presenta un mejor rendimiento con respecto a gbm. Aunque la diferencia es mínima, nos ayudaremos de la visualización para determinar la elección del modelo de predicción definitivo.
+
+A continuación, vamos a graficar la predicción con cada uno de estos modelos junto con el valor real de cada ejemplo, de modo que podamos ver de manera visual las desviaciones. Para ello, en primer lugar se ha realizado una selección de ejemplos del subconjunto de entrenamiento, en el que se dispone del número de bicicletas alquiladas. Posteriormente, se implementa una función que recibe el modelo y el conjunto de datos originales para los que se realiza la predicción.
+
+Como resultado, se obtiene la gráfica con los valores superpuestos.
+
+```{r}
+sample_train_bikes <- train_bikes %>%
+  filter(num_bikes < 400) %>%
+  slice_head(n = 100)
+
+plot_real_and_predict <- function(model, data) {
+  sample_predict <- data %>%
+    select(-num_bikes)
+  
+  res_predict <- predict(model, sample_predict)
+  res_predict <- data.frame(floor(res_predict))
+  names(res_predict)[1] <- "num_bikes"
+  
+  ggplot() +
+  geom_area(data = data,
+            aes(x = 1:nrow(data), y = num_bikes),
+            alpha = 0.6,
+            color = "red",
+            fill = "red") +
+  geom_area(data = res_predict,
+            aes(x = 1:nrow(res_predict), y = num_bikes),
+            alpha = 0.4,
+            color = "blue",
+            fill = "blue") +
+  labs(x = "Casos")
+}
+```
+
+Vamos a observar la predicción para el modelo de Random Forest.
+
+```{r}
+plot_real_and_predict(model_rf_reg, sample_train_bikes)
+```
+
+En esta ocasión, se visualiza la predicción para el modelo gbm.
+
+```{r}
+plot_real_and_predict(model_gbm_reg2, sample_train_bikes)
+```
