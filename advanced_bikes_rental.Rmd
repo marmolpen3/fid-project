@@ -3,19 +3,29 @@ title: "R Notebook"
 output: html_notebook
 ---
 
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
+
 ```{r}
 library(tidyverse)
 library(visdat)
 library(ggplot2)
-library(corrplot)
+library(NbClust)
+library(factoextra)
 ```
 
+# Introducción
+
+En este notebook, se pretende estudiar los patrones existentes dentro del dataset empleado en la regresión. El objetivo es construir grupos con los ejemplos más similares y analizar el comportamiento de estos. Para ello, se aplicarán los siguientes algoritmos k-means y clustering jerárquico.
+
 ```{r}
+# Lectura del dataset
 train_bikes <- read.table("data/train.csv", na.strings="", header=TRUE, sep=";", dec=".")
 head(train_bikes)
 ```
 
 ## Preprocesado
+
+El atributo id no aporta información relevante, lo eliminaremos y el atributo *count* no tiene un nombre representativo, lo sustituiremos por *num_bikes*.
 
 ```{r}
 train_bikes <- select(train_bikes, -id)
@@ -23,7 +33,7 @@ names(train_bikes)[11] <- "num_bikes"
 head(train_bikes)
 ```
 
-Tal y como ya hemos visto en el anterior notebook, el dataset está limpio de valores NA pero se observan algunos outliers en la variable de *windspeed*. Por tanto, pasamos a la eliminación de dichos valores.
+Tal y como ya hemos visto en el notebook anterior, el dataset está limpio de valores NA pero se observan algunos outliers en la variable de *windspeed*. Por tanto, pasamos a la eliminación de dichos valores.
 
 ```{r}
 # Outliers en windspeed por encima de 32 km/h
@@ -53,17 +63,22 @@ boxplot(train_bikes$humidity, horizontal = TRUE)
 ```
 
 ```{r}
+# Resumen
 summary(train_bikes)
 ```
 
 ## Clustering
 
+El objetivo es someter a los datos a un estudio de clustering y obtener los ejemplos con las mísmas características. Filtramos únicamente por los ejemplos de 2011.
+
 ```{r}
 train_bikes_short <- subset(train_bikes, train_bikes$year == 2011)
 ```
 
+Se eliminan algunas variables como el year y la temp que está correlacionada con atemp.
+
 ```{r}
-train_bikes_short <- select(train_bikes_short, -year, -holiday, -workingday, -weather, -temp)
+train_bikes_short <- select(train_bikes_short, -year, -temp)
 
 head(train_bikes_short)
 ```
@@ -80,7 +95,7 @@ Utilizamos la función *summary* para estudiar la distribución de los datos.
 summary(train_bikes_short)
 ```
 
-Observamos que los datos no están distribuidos. Usamos la función *scale* para para distribuirlos y poder aplicar clustering.
+Observamos que los datos no están distribuidos. Por lo tanto, aplicamos la función *scale* para que estén escalados y poder aplicar clustering.
 
 ```{r}
 scaled_bikes <- scale(train_bikes_short)
@@ -88,17 +103,28 @@ scaled_bikes <- scale(train_bikes_short)
 summary(scaled_bikes)
 ```
 
-Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo **k-means** con el fin de identificar similitudes entre los ejemplos.
+Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son silhouette, wss o gap_stat.
+
+```{r}
+
+fviz_nbclust(scaled_bikes, FUN = hcut, method = "silhouette")
+fviz_nbclust(scaled_bikes, FUN = hcut, method = "wss")
+fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
+
+
+```
+
+Se aplica el algoritmo **k-means** para
 
 ```{r}
 # Aseguramos la reproducibilidad 
 seed_val = 50
 set.seed(seed_val)
-# Cinco clusters
+# Número de clusters
 k = 4
 # Primera ejecución del k-Means
-bikes_clust = kmeans(scaled_bikes, centers = k, nstart = 1)
-# Vemos cuantos pacientes hay en cada grupo
+bikes_clust = kmeans(scaled_bikes, centers = k, nstart = 20)
+# Ejemplos por grupos
 bikes_clust$size
 ```
 
@@ -126,3 +152,9 @@ hier_clust_1 = hclust(dist(scaled_bikes), method= 'complete')
 # printing the dendrogram
 plot(hier_clust_1)
 ```
+
+Debido a la dificultad de los datos y complejidad de las agrupaciones, consideramos adecuado seleccionar otro dataset más apropiado para la aplicación de agrupaciones.
+
+# **Unsupervised Learning on Country Data**
+
+El conjunto de datos que se ha seleccionado contiene información sobre valores sociales, económicos y de salud que determinan la situación del país a analizar.
