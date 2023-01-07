@@ -12,7 +12,7 @@ install.packages("NbClust")
 install.packages("factoextra")
 ```
 
-Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización y de **NbClust** y **factoextra** para clustering.
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización, de **corrplot** para la correlación de las variables y de **NbClust** y **factoextra** para clustering.
 
 ```{r}
 library(tidyverse)
@@ -20,6 +20,7 @@ library(visdat)
 library(ggplot2)
 library(NbClust)
 library(factoextra)
+library(corrplot)
 ```
 
 # Introducción
@@ -253,11 +254,13 @@ sample_clusters <- cutree(hier_clust_single, k = 4)
 fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = sample_clusters), labels = 5)
 ```
 
-Debido a la dificultad de los datos y complejidad de las agrupaciones, consideramos adecuado seleccionar otro dataset más apropiado para la aplicación de agrupaciones.
+Debido a la dificultad de los datos y complejidad de las agrupaciones, consideramos adecuado seleccionar otro dataset más apropiado para la aplicación de agrupaciones. Con el fin de comprender mejor el funcionamiento de los algoritmos y los clusterings obtenidos.
 
 # **Unsupervised Learning on Country Data**
 
-El conjunto de datos que se ha seleccionado contiene información sobre valores sociales, económicos y de salud que determinan la situación del país a analizar. Vamos a comenzar conociendo un poco más sobre las variables que conforman nuestro dataset.
+El conjunto de datos que se ha seleccionado contiene información sobre valores sociales, económicos y de salud que determinan la situación de los países que contiene el dataset. El problema que se plantea es ayudar a la ONG HELP International a invertir el dinero que ha recaudado de forma estratégica y eficaz. Por ello, la aplicación de clustering es esencial, permitiendo detectar los países más necesitados según sus características.
+
+Vamos a comenzar conociendo un poco más sobre las variables que conforman nuestro [dataset](https://www.kaggle.com/datasets/rohan0301/unsupervised-learning-on-country-data).
 
 ```{r}
 variables_info <- read_csv("data/data-dictionary.csv", show_col_types = FALSE)
@@ -278,9 +281,10 @@ Procedemos a realizar un búsqueda de valores perdidos.
 vis_miss(country_data)
 ```
 
-Una vez comprobado que no hay valores perdidos, vamos a renombrar el nombre de las filas para que reciban el nombre de su respectivos país y eliminamos la columna de los países para poder trabajar solo con variables numéricas.
+Una vez comprobado que no hay valores perdidos, vamos a renombrar el nombre de las filas para que reciban el nombre de su respectivos país y eliminamos la columna de los países para poder trabajar solo con variables numéricas (necesario en la aplicación de clustering).
 
 ```{r}
+
 country_data_df <- as.data.frame(country_data)
 rownames(country_data_df) <- country_data_df[,1]
 country_data_df <- country_data_df[,-1]
@@ -330,11 +334,11 @@ M <- round(cor(cor_country_data,  method = "spearman"), digits=2)
 corrplot(M, method = "number", tl.cex = 0.7,number.cex = 0.8) 
 ```
 
-Se puede observar la gran correlación existente entre todas las variables.
+Se puede observar la gran correlación existente entre todas las variables, tanto negativa como positiva.
 
 ## Clustering
 
-Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
+El objetivo de someter a los datos a un estudio de clustering es obtener los países que tienen las mísmas características. Primero, nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
 
 ```{r}
 lapply(country_data_df, class)
@@ -385,8 +389,63 @@ El número de ejemplos que pertenece a cada cluster no se diferencia mucho, salv
 ```{r}
 # Añadimos la columna adicional con el número del cluster al que pertenece cada ejemplo
 country_clust['country_clust'] = country_clust$cluster
+```
 
-# Creamos una gráfica usando como ejes la hora y el número de bicicletas
-plot_one <- ggplot(country_data_df, aes(x=child_mort, y=gdpp, color=as.factor(country_clust))) + geom_point()
-plot_one 
+```{r}
+fviz_cluster(list(data = as.matrix(country_data_scale), cluster = country_clust$cluster), labels = 5)
+```
+
+#### Clustering Jerárquico
+
+Existen varios métodos para aplicar el [Clustering Jerárquico](https://rpubs.com/mjimcua/clustering-jerarquico-en-r), vamos a hacer uso de los métodos complete y single. Para calcular la distancia entre ejemplos se emplea la función [dist](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist) que por defecto usa el método *euclidean.*
+
+#### Clustering Jerárquico: Complete
+
+El dendograma nos permite vincular los grupos a los que pertenecen los ejemplos. Es decir, las agrupaciones forman un árbol donde cada rama que nace es un cluster.
+
+```{r}
+
+hier_clust_c_complete <- hclust(dist(country_data_scale), method= 'complete')
+
+plot(hier_clust_c_complete, cex = 0.6, hang = -1)
+
+```
+
+En este caso, observamos en la altura 6-8 tres agrupaciones de datos que son similares entre sí.
+
+```{r}
+
+plot(hier_clust_c_complete, cex = 0.6, hang = -1)
+rect.hclust(hier_clust_c_complete, k = 3, border = 2:4)
+
+```
+
+Los resultados obtenidos tienen similitud con los conseguidos por **K-means**.
+
+```{r}
+sample_c_clusters <- cutree(hier_clust_c_complete, k = 3)
+fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters), labels = 5)
+```
+
+#### Clustering Jerárquico: Single
+
+Al igual que el anterior, el dendograma obtenido al aplicar el clustering jerárquico nos permite vincular los grupos a los que pertenecen los ejemplos.
+
+```{r}
+
+hier_clust_c_single <- hclust(dist(country_data_scale), method= 'single')
+
+plot(hier_clust_c_single, cex = 0.6, hang = -1)
+```
+
+```{r}
+plot(hier_clust_c_single, cex = 0.6, hang = -1)
+rect.hclust(hier_clust_c_single, k = 3, border = 2:4)
+```
+
+Los resultados obtenidos no se parecen al los anteriores modelos aplicados.
+
+```{r}
+sample_c_clusters <- cutree(hier_clust_c_single, k = 3)
+fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters), labels = 5)
 ```
