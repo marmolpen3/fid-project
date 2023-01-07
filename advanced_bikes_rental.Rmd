@@ -6,9 +6,19 @@ output: html_notebook
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
 
 ```{r}
+install.packages("tidyverse")
+install.packages("visdat")
+install.packages("ggplot2")
+install.packages("corrplot")
+install.packages("NbClust")
+install.packages("factoextra")
+```
+
+```{r}
 library(tidyverse)
 library(visdat)
 library(ggplot2)
+library(corrplot)
 library(NbClust)
 library(factoextra)
 ```
@@ -83,7 +93,7 @@ train_bikes_short <- select(train_bikes_short, -year, -temp)
 head(train_bikes_short)
 ```
 
-Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica aplicando la función *lapply*.
+Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
 
 ```{r}
 lapply(train_bikes_short, class)
@@ -103,144 +113,190 @@ scaled_bikes <- scale(train_bikes_short)
 summary(scaled_bikes)
 ```
 
-#### Clustering No jerarquizado
-
-Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*. Se omite la ejecución con el modelo *gap_stat* por ser costoso al no converger los datos, el resultado obtenido es que el número de clusters óptimo es K = 10.
+Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son silhouette, wss o gap_stat.
 
 ```{r}
 
 fviz_nbclust(scaled_bikes, FUN = hcut, method = "silhouette")
 fviz_nbclust(scaled_bikes, FUN = hcut, method = "wss")
-#fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
+fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
+
 
 ```
 
-Siguiendo las recomendaciones de los métodos *silhouette* y *wss*, se aplica el algoritmo **k-means** para k = 4. Es decir, se van a obtener 4 agrupaciones de los datos según sus características.
+Se aplica el algoritmo **k-means** para
 
 ```{r}
-# Aseguramos la reproducibilidad, establecemos la semilla del generador de números aleatorios
-seed_val <- 10
+# Aseguramos la reproducibilidad 
+seed_val = 50
 set.seed(seed_val)
 # Número de clusters
 k = 4
-# Aplicamos k-means
-bikes_clust <- kmeans(scaled_bikes, centers = k)
+# Primera ejecución del k-Means
+bikes_clust = kmeans(scaled_bikes, centers = k, nstart = 20)
 # Ejemplos por grupos
 bikes_clust$size
 ```
 
-La cantidad de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 2. Los analizamos con mayor profundidad a través de gráficas.
-
 ```{r}
-# Añadimos la columna adicional con el número del cluster al que pertenece cada ejemplo
+# Añadimos columnas adicionales
 train_bikes_short['bikes_clust'] = bikes_clust$cluster
 
-# Creamos una gráfica usando como ejes la hora y el número de bicicletas
-plot_one <- ggplot(train_bikes_short, aes(x=hour, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
+plot_one = ggplot(train_bikes_short, aes(x=windspeed, y=atemp, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
-plot_one <- ggplot(train_bikes_short, aes(x=season, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+# Añadimos columnas adicionales
+train_bikes_short['bikes_clust'] = bikes_clust$cluster
+
+# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
+plot_one = ggplot(train_bikes_short, aes(x=hour, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
-plot_one <- ggplot(train_bikes_short, aes(x=holiday, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
-plot_one 
-```
-
-```{r}
-plot_one <- ggplot(train_bikes_short, aes(x=atemp, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
-plot_one 
-```
-
-```{r}
-plot_one <- ggplot(train_bikes_short, aes(x=weather, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
-plot_one 
-```
-
-```{r}
-plot_one <- ggplot(train_bikes_short, aes(x=humidity, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
-plot_one
-```
-
-```{r}
-
-fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = bikes_clust$cluster), labels = 5)
-```
-
-De estas gráficas podemos obtener algunas conclusiones:
-
--   Cluster 1: Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
-
--   Cluster 2: Se dan todas las condiciones para que se alquilen más bicicletas, buen tiempo, buena temperatura, humedad óptima y en primavera, verano u otoño.
-
--   Cluster 3: Su principal característica es que son datos que pertenecen a la estación de invierno y por tanto, el número de bicicletas que se alquilan son menos durante el día.
-
--   Cluster 4: Ejemplos que suelen encontrarse entre las 12pm y las 6am.
-
--   Las horas en las que se alquilan menos bicicletas son de 12pm a 6am y normalmente suele darse en primavera, verano y otoño, rara vez en invierno. Suelen tener buenas condiciones temporales.
-
--   Durante el día se alquilan menos bicicletas en invierno que en primavera, verano y otoño.
-
-#### Clustering Jerárquico
-
-Existen varios métodos para aplicar el [Clustering Jerárquico](https://rpubs.com/mjimcua/clustering-jerarquico-en-r), vamos a hacer uso de los métodos complete y single. Para calcular la distancia entre ejemplos se emplea la función [dist](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist) que por defecto usa el método *euclidean.*
-
-#### Clustering Jerárquico: Complete
-
-El dendograma nos permite vincular los grupos a los que pertenecen los ejemplos. Es decir, las agrupaciones forman un árbol donde cada rama que nace es un cluster.
-
-```{r}
-
-hier_clust_complete <- hclust(dist(scaled_bikes), method= 'complete')
-
-plot(hier_clust_complete, cex = 0.6, hang = -1)
-
-```
-
-En este caso, observamos en la altura 6-8 cuatro agrupaciones de datos que son similares entre sí. Sin embargo, en la altura 4-6 podemos destacar diez grupos de datos.
-
-```{r}
-
-plot(hier_clust_complete, cex = 0.6, hang = -1)
-rect.hclust(hier_clust_complete, k = 4, border = 2:4)
-
-```
-
-Los resultados obtenidos tienen similitud con los conseguidos por **K-means**.
-
-```{r}
-sample_clusters <- cutree(hier_clust_complete, k = 4)
-fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = sample_clusters), labels = 5)
-```
-
-#### Clustering Jerárquico: Single
-
-Al igual que el anterior, el dendograma obtenido al aplicar el clustering jerárquico nos permite vincular los grupos a los que pertenecen los ejemplos.
-
-```{r}
-
-hier_clust_single <- hclust(dist(scaled_bikes), method= 'single')
-
-plot(hier_clust_single, cex = 0.6, hang = -1)
-```
-
-```{r}
-plot(hier_clust_single, cex = 0.6, hang = -1)
-rect.hclust(hier_clust_single, k = 4, border = 2:4)
-```
-
-Los resultados obtenidos no se parecen al los anteriores modelos aplicados.
-
-```{r}
-sample_clusters <- cutree(hier_clust_single, k = 4)
-fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = sample_clusters), labels = 5)
+# executing hierarchical clustering with complete linkage
+hier_clust_1 = hclust(dist(scaled_bikes), method= 'complete')
+# printing the dendrogram
+plot(hier_clust_1)
 ```
 
 Debido a la dificultad de los datos y complejidad de las agrupaciones, consideramos adecuado seleccionar otro dataset más apropiado para la aplicación de agrupaciones.
 
 # **Unsupervised Learning on Country Data**
 
-El conjunto de datos que se ha seleccionado contiene información sobre valores sociales, económicos y de salud que determinan la situación del país a analizar.
+El conjunto de datos que se ha seleccionado contiene información sobre valores sociales, económicos y de salud que determinan la situación del país a analizar. Vamos a comenzar conociendo un poco más sobre las variables que conforman nuestro dataset.
+
+```{r}
+variables_info <- read_csv("data/data-dictionary.csv", show_col_types = FALSE)
+variables_info
+```
+
+Importamos los datos y damos un primer vistazo.
+
+```{r}
+country_data <- read_csv("data/Country-data.csv", show_col_types = FALSE)
+head(data)
+summary (data)
+```
+
+Procedemos a realizar un búsqueda de valores perdidos.
+
+```{r}
+vis_miss(country_data)
+```
+
+Una vez comprobado que no hay valores perdidos, vamos a renombrar el nombre de las filas para que reciban el nombre de su respectivos país y eliminamos la columna de los países para poder trabajar solo con variables numéricas.
+
+```{r}
+country_data_df <- as.data.frame(country_data)
+rownames(country_data_df) <- country_data_df[,1]
+country_data_df <- country_data_df[,-1]
+
+head(country_data_df)
+```
+
+Lo siguiente que analizaremos son los outliers de cada columna. Para ello divideremos las gráficas en tres categorías de mayor a menor escala para poder observarlas adecuadamente.
+
+```{r}
+# Rango 0 - 200
+country_data_boxplot <- select(country_data_df, child_mort, exports, imports, life_expec, inflation)
+boxplot(country_data_boxplot, col = rainbow(ncol(country_data_boxplot)))
+
+# Rango 0 - 20
+country_data_boxplot <- select(country_data_df, health, total_fer)
+boxplot(country_data_boxplot, col = rainbow(ncol(country_data_boxplot)))
+
+# Rango 0 - 150000
+country_data_boxplot <- select(country_data_df, gdpp, income)
+boxplot(country_data_boxplot, col = rainbow(ncol(country_data_boxplot)))
+```
+
+A pesar de que se han detectado outliers para todas las variables, se considera que no es adecuada su eliminación debido a que pueden representar países en muy malas condiciones que necesitan ayuda.
+
+A continuación, realizamos un estudio de la [correlación](https://www.cienciadedatos.net/documentos/24_correlacion_y_regresion_lineal) entre las variables para conocer como de relacionadas están las columnas entre si. Para ello, estudiamos la distribución de las variables en primer lugar.
+
+```{r}
+# Estudio de la normalización de las variables
+qqnorm(country_data_df$child_mort, main = "Child mortality", col = "darkred")
+qqline(country_data_df$child_mort)
+qqnorm(country_data_df$gdpp, main = "GDPP", col = "blue")
+qqline(country_data_df$gdpp)
+qqnorm(country_data_df$total_fer, main = "Total fertility", col = "darkgreen")
+qqline(country_data_df$total_fer)
+```
+
+Debido a que las variables cuantitativas que contiene el dataset no se distribuyen de forma normal, se ha empleado el coeficiente de Spearman para el cálculo de la correlación.
+
+```{r}
+# Matriz de correlación entre las variables cuantitativas
+cor_country_data <- round(cor(country_data_df,  method = "spearman"), digits = 2)
+cor_country_data
+
+M <- round(cor(cor_country_data,  method = "spearman"), digits=2)
+
+corrplot(M, method = "number", tl.cex = 0.7,number.cex = 0.8) 
+```
+
+Se puede observar la gran correlación existente entre todas las variables.
+
+## Clustering
+
+Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
+
+```{r}
+lapply(country_data_df, class)
+```
+
+Utilizamos la función *summary* para estudiar la distribución de los datos.
+
+```{r}
+summary(country_data_df)
+```
+
+Observamos que los datos no están distribuidos. Por lo tanto, aplicamos la función *scale* para que estén escalados y poder aplicar clustering.
+
+```{r}
+country_data_scale <- scale(country_data_df)
+
+summary(country_data_scale)
+```
+
+Una vez escalados los datos, vamos a aplicar el algoritmo **k-means** para identificar similitudes entre los ejemplos. Comenzamos determinando el número de centros que debemos emplear en el algoritmo. Utilizamos los métodos *silhouette, wss o gap_stat* para llegar a una conclusión.
+
+```{r}
+fviz_nbclust(country_data_scale, FUN = hcut, method = "silhouette")
+fviz_nbclust(country_data_scale, FUN = hcut, method = "wss")
+fviz_nbclust(country_data_scale, FUN = hcut, method = "gap_stat")
+```
+
+Con el algoritmo *silhouette*, obtenemos que el número de centros ideal sería de 2.
+
+El algoritmo *wss*, nos dice que, aproximadamente, entre 2 y 5 serían el número de centros ideales.
+
+Y por último el algoritmo *gap_stat*, nos indica que 3 es la mejor aproximación.
+
+Por tanto, realizando una media entre los valores obtenidos en cada algoritmo, hemos decidido seleccionar 3 centros.
+
+```{r}
+# Aseguramos la reproducibilidad 
+seed_val = 50
+set.seed(seed_val)
+# Número de clusters
+k = 3
+# Primera ejecución del k-Means
+country_clust = kmeans(country_data_scale, centers = k, nstart = 20)
+# Ejemplos por grupos
+country_clust$size
+```
+
+```{r}
+# Añadimos columnas adicionales
+country_data_scale['country_clust'] = country_clust$cluster
+
+# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
+plot_one = ggplot(country_data_scale, aes(x=windspeed, y=atemp, color=as.factor(country_clust))) + geom_point()
+plot_one
+```
