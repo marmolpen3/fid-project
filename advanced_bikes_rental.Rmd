@@ -3,8 +3,6 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
-
 ```{r}
 install.packages("tidyverse")
 install.packages("visdat")
@@ -14,11 +12,12 @@ install.packages("NbClust")
 install.packages("factoextra")
 ```
 
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
+
 ```{r}
 library(tidyverse)
 library(visdat)
 library(ggplot2)
-library(corrplot)
 library(NbClust)
 library(factoextra)
 ```
@@ -93,7 +92,7 @@ train_bikes_short <- select(train_bikes_short, -year, -temp)
 head(train_bikes_short)
 ```
 
-Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica.
+Nos aseguramos de que todas las variables con las que trabajamos son de clase numérica aplicando la función *lapply*.
 
 ```{r}
 lapply(train_bikes_short, class)
@@ -113,54 +112,145 @@ scaled_bikes <- scale(train_bikes_short)
 summary(scaled_bikes)
 ```
 
-Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son silhouette, wss o gap_stat.
+#### Clustering No jerarquizado
+
+Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*. Se omite la ejecución con el modelo *gap_stat* por ser costoso al no converger los datos, el resultado obtenido es que el número de clusters óptimo es K = 10.
 
 ```{r}
 
 fviz_nbclust(scaled_bikes, FUN = hcut, method = "silhouette")
 fviz_nbclust(scaled_bikes, FUN = hcut, method = "wss")
-fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
-
+#fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
 
 ```
 
-Se aplica el algoritmo **k-means** para
+Siguiendo las recomendaciones de los métodos *silhouette* y *wss*, se aplica el algoritmo **k-means** para k = 4. Es decir, se van a obtener 4 agrupaciones de los datos según sus características.
 
 ```{r}
-# Aseguramos la reproducibilidad 
-seed_val = 50
+# Aseguramos la reproducibilidad, establecemos la semilla del generador de números aleatorios
+seed_val <- 10
 set.seed(seed_val)
 # Número de clusters
 k = 4
-# Primera ejecución del k-Means
-bikes_clust = kmeans(scaled_bikes, centers = k, nstart = 20)
+# Aplicamos k-means
+bikes_clust <- kmeans(scaled_bikes, centers = k)
 # Ejemplos por grupos
 bikes_clust$size
 ```
 
+La cantidad de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 2. Los analizamos con mayor profundidad a través de gráficas.
+
 ```{r}
-# Añadimos columnas adicionales
+# Añadimos la columna adicional con el número del cluster al que pertenece cada ejemplo
 train_bikes_short['bikes_clust'] = bikes_clust$cluster
 
-# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
-plot_one = ggplot(train_bikes_short, aes(x=windspeed, y=atemp, color=as.factor(bikes_clust))) + geom_point()
+# Creamos una gráfica usando como ejes la hora y el número de bicicletas
+plot_one <- ggplot(train_bikes_short, aes(x=hour, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
-# Añadimos columnas adicionales
-train_bikes_short['bikes_clust'] = bikes_clust$cluster
-
-# Creamos una gráfica usando como ejes la edad y el colesterol para la primera ejecución del kMeans
-plot_one = ggplot(train_bikes_short, aes(x=hour, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+# Creamos una gráfica usando como ejes la temporada y el número de bicicletas
+plot_one <- ggplot(train_bikes_short, aes(x=season, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
 plot_one 
 ```
 
 ```{r}
-# executing hierarchical clustering with complete linkage
-hier_clust_1 = hclust(dist(scaled_bikes), method= 'complete')
-# printing the dendrogram
-plot(hier_clust_1)
+# Creamos una gráfica usando como ejes las vacaciones y el número de bicicletas
+plot_one <- ggplot(train_bikes_short, aes(x=holiday, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+plot_one 
+```
+
+```{r}
+# Creamos una gráfica usando como ejes la sensación de temperatura y el número de bicicletas
+plot_one <- ggplot(train_bikes_short, aes(x=atemp, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+plot_one 
+```
+
+```{r}
+# Creamos una gráfica usando como ejes el tiempo y el número de bicicletas
+plot_one <- ggplot(train_bikes_short, aes(x=weather, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+plot_one 
+```
+
+```{r}
+# Creamos una gráfica usando como ejes la humedad y el número de bicicletas
+plot_one <- ggplot(train_bikes_short, aes(x=humidity, y=num_bikes, color=as.factor(bikes_clust))) + geom_point()
+plot_one
+```
+
+```{r}
+
+fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = bikes_clust$cluster), labels = 5)
+```
+
+De estas gráficas podemos obtener algunas conclusiones:
+
+-   Cluster 1: Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
+
+-   Cluster 2: Se dan todas las condiciones para que se alquilen más bicicletas, buen tiempo, buena temperatura, humedad óptima y en primavera, verano u otoño.
+
+-   Cluster 3: Su principal característica es que son datos que pertenecen a la estación de invierno y por tanto, el número de bicicletas que se alquilan son menos durante el día.
+
+-   Cluster 4: Ejemplos que suelen encontrarse entre las 12pm y las 6am.
+
+-   Las horas en las que se alquilan menos bicicletas son de 12pm a 6am y normalmente suele darse en primavera, verano y otoño, rara vez en invierno. Suelen tener buenas condiciones temporales.
+
+-   Durante el día se alquilan menos bicicletas en invierno que en primavera, verano y otoño.
+
+#### Clustering Jerárquico
+
+Existen varios métodos para aplicar el [Clustering Jerárquico](https://rpubs.com/mjimcua/clustering-jerarquico-en-r), vamos a hacer uso de los métodos complete y single. Para calcular la distancia entre ejemplos se emplea la función [dist](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist) que por defecto usa el método *euclidean.*
+
+#### Clustering Jerárquico: Complete
+
+El dendograma nos permite vincular los grupos a los que pertenecen los ejemplos. Es decir, las agrupaciones forman un árbol donde cada rama que nace es un cluster.
+
+```{r}
+
+hier_clust_complete <- hclust(dist(scaled_bikes), method= 'complete')
+
+plot(hier_clust_complete, cex = 0.6, hang = -1)
+
+```
+
+En este caso, observamos en la altura 6-8 cuatro agrupaciones de datos que son similares entre sí. Sin embargo, en la altura 4-6 podemos destacar diez grupos de datos.
+
+```{r}
+
+plot(hier_clust_complete, cex = 0.6, hang = -1)
+rect.hclust(hier_clust_complete, k = 4, border = 2:4)
+
+```
+
+Los resultados obtenidos tienen similitud con los conseguidos por **K-means**.
+
+```{r}
+sample_clusters <- cutree(hier_clust_complete, k = 4)
+fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = sample_clusters), labels = 5)
+```
+
+#### Clustering Jerárquico: Single
+
+Al igual que el anterior, el dendograma obtenido al aplicar el clustering jerárquico nos permite vincular los grupos a los que pertenecen los ejemplos.
+
+```{r}
+
+hier_clust_single <- hclust(dist(scaled_bikes), method= 'single')
+
+plot(hier_clust_single, cex = 0.6, hang = -1)
+```
+
+```{r}
+plot(hier_clust_single, cex = 0.6, hang = -1)
+rect.hclust(hier_clust_single, k = 4, border = 2:4)
+```
+
+Los resultados obtenidos no se parecen al los anteriores modelos aplicados.
+
+```{r}
+sample_clusters <- cutree(hier_clust_single, k = 4)
+fviz_cluster(list(data = as.matrix(scaled_bikes), cluster = sample_clusters), labels = 5)
 ```
 
 Debido a la dificultad de los datos y complejidad de las agrupaciones, consideramos adecuado seleccionar otro dataset más apropiado para la aplicación de agrupaciones.
