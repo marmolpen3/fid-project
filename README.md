@@ -145,6 +145,9 @@ En esta etapa, se utilizan todas las librerías anteriores y además se añade a
 ## Sección 4. Conclusiones
 
 ### Análisis básico. Regresión
+Al finalizar el problema para el nivel básico, se llega a la conclusión de que el dataset utilizado no se adapta bien a modelos de regresión lineal, siendo necesario resolverlos mediante otra técnica algorítmica. Es un dataset preparado para poder trabajar la visualización y realizar análisis exploratorio de datos.
+
+En relación a los métodos utilizados para regresión, aunque todos ellos aplican bien a problemas no lineales, se han obtenido resultados muy similares en el caso de Random Forest y xgbTree. Ambos modelos ajustan bastante bien la predicción. Finalmente se ha optado por el modelo de xgbTree por presentar los mejores valores de rendimiento y el menor error.
 
 ### Análisis avanzado. Clustering
 Las conclusiones obtenidas tras la ejecución de algoritmos de Clustering sobre los problemas presentados son las siguientes:
