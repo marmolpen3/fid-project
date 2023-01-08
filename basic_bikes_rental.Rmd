@@ -299,20 +299,28 @@ ggplot(bikes_by_weather, aes(x = weather, y = total_bikes_by_weather)) +
 Porcentaje de bicicletas que se alquilan durante los días de trabajo.
 
 ```{r}
-
 bikes_by_working_day <- train_bikes %>%
   group_by(workingday) %>%
   summarize(total_bikes_by_working_day = sum(num_bikes))
 
 bike_count <- bikes_by_working_day$total_bikes_by_working_day
 
-bike_percentage <- paste0(round(100 * bike_count/sum(bike_count), 2), "%")
-bike_count
-bike_percentage
+samples_working_day <- train_bikes %>%
+  group_by(workingday) %>%
+  count()
 
-pie(bike_count, labels = bike_percentage)
+a_no_working_day <- bike_count[1] / samples_working_day[1,2]
 
-legend("topleft", legend = c( "No laboral", "Laboral"), fill =  c("white", "lightblue"))
+a_working_day <- bike_count[2] / samples_working_day[2,2]
+
+a_bike_count <- data.frame(c(a_no_working_day, a_working_day))
+
+bike_percentage <- paste0(round(100 * a_bike_count/sum(a_bike_count), 2), "%")
+
+result <- data.frame(bike_percentage[1], bike_percentage[2])
+colnames(result) <- c("non working day", "working day")
+
+result
 ```
 
 Porcentaje medio de bicicletas que se alquilan si estamos en días de vacaciones o no.

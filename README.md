@@ -69,11 +69,11 @@ La selección del conjunto de datos y la definición del problema a resolver es 
 En esta primera fase del proyecto se aplican algoritmos Supervisados para resolver el problema de las bicicletas anteriormente propuesto. Tomando como conjunto de datos el dataset "Bike Rental Data" y aplicando modelos de regresión se pretende predecir el número de bicicletas que se alquilarán en el futuro según las codiciones temporales.
 
 Con el proposito de resolver este problema se plantean una serie de etapas a seguir y métodos a aplicar. Las etapas y objetivos que plantea el grupo son los siguientes:
-- Análisis y preprocesado de los datos: renombrar y eliminar atributos, búsqueda de valores perdidos, detección de outliers, estudio de las variables.
+- Preprocesado de los datos: renombrar y eliminar atributos, búsqueda de valores perdidos, detección de outliers, estudio de las variables.
 - Análisis y Visualización de los datos: comprobar la homogeneidad de los datos, histogramas, estudio de los datos.
 - Regresión lineal: dispersión de los ejemplos frente a la variable a predecir, estudio de la correlación, construcción y estudio del modelo, predicción.
 - Algoritmos paquete Caret: creación modelos Random Forest, xgbTree y gbm.
-- Comparativa: obtener el modelo con mejores resultados.
+- Comparativa y predicción final: obtener el modelo con mejores resultados.
 
 ### Análisis avanzado. Clustering
 El segundo análisis del proyecto estará enfocado al estudio y aplicación de algoritmos No Supervisados con el fin de resolver el problema de los países anteriormente identificado. Empleando como conjunto de datos el dataset "Country Data" y aplicando modelos de Clustering como K-means y jerárquicos se desea ayudar a la ONG HELP International a seleccionar los países con más necesidades.

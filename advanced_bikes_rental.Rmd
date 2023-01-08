@@ -585,7 +585,7 @@ df3
 
 Visualizando y comparando los datos obtenidos encontramos que existen aproximadamente unos 50 países que requieren ayuda internacional, entre todos ellos el que más necesidades presenta es Nigeria.
 
-Respecto a la evaluación de los modelos, tras ejecutar la función *clValid* obtenemos que el algoritmo más adecuado para el dataset elegido es jerárquico con k=2 según la mayoría de métodos evaluados.
+Respecto a la evaluación de los modelos, tras ejecutar la función [*clValid*](https://rpubs.com/Joaquin_AR/310338) obtenemos que el algoritmo más adecuado para el dataset elegido es jerárquico con k=2 según la mayoría de métodos evaluados.
 
 ```{r}
 comparacion <- clValid(

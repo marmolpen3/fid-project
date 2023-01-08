@@ -6,3 +6,4 @@
 .Rhistory
 .DS_Store
 data
+*.knit.md
