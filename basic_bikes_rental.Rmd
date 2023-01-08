@@ -657,7 +657,7 @@ resamps <- resamples(list(
 summary(resamps)
 ```
 
-Vamos a observar el rendimiento en base a dos métricas: R-squared y RMSE.
+Vamos a observar el rendimiento en base a las métricas: R-squared, RMSE y MAE.
 
 ```{r}
 summary(resamps, metric = "Rsquared")
@@ -669,9 +669,14 @@ summary(resamps, metric = "RMSE")
 bwplot(resamps, metric = "RMSE")
 ```
 
-En función tanto del valor R-squared como del RMSE, Random Forest presenta un mejor rendimiento con respecto a gbm. Aunque la diferencia es mínima, nos ayudaremos de la visualización para determinar la elección del modelo de predicción definitivo.
+```{r}
+summary(resamps, metric = "MAE")
+bwplot(resamps, metric = "MAE")
+```
 
-A continuación, vamos a graficar la predicción con cada uno de estos modelos junto con el valor real de cada ejemplo, de modo que podamos ver de manera visual las desviaciones. Para ello, en primer lugar se ha realizado una selección de ejemplos del subconjunto de entrenamiento, en el que se dispone del número de bicicletas alquiladas. Posteriormente, se implementa una función que recibe el modelo y el conjunto de datos originales para los que se realiza la predicción.
+En función de todas estas medidas, Random Forest presenta un mejor rendimiento y mayor precisión con respecto a gbm para el conjunto de datos de entrenamiento. Aunque la diferencia es mínima, nos ayudaremos de la visualización para determinar la elección del modelo de predicción definitivo.
+
+Vamos a graficar la predicción con cada uno de estos modelos junto con el valor real de cada ejemplo, de modo que podamos ver de manera visual las desviaciones. Para ello, en primer lugar se ha realizado una selección de ejemplos del subconjunto de entrenamiento, en el que se dispone del número de bicicletas alquiladas. Posteriormente, se implementa una función que recibe el modelo y el conjunto de datos originales para los que se realiza la predicción.
 
 Como resultado, se obtiene la gráfica con los valores superpuestos.
 
