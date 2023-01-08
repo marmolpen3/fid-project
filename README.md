@@ -11,7 +11,7 @@ Previo al inicio de la documentación puntualizar que se ha hecho uso de dos dat
 La justificación de la toma de esta decisión se detallará más adelante y pude encontrarse en el notebook de análisis avanzado.
 
 El documento se organizará de la siguiente manera, en primer lugar se definirán los dos problemas elegidos que se pretenden resolver aplicando Machine learning, 
-en la sección 2 hablaremos sobre el proceso de análisis y los algoritmos seleccionados para cada caso, en cuanto a la sección 3 se describen todas las fases que se ha aplicado a los datos,
+en la sección 2 hablaremos sobre el proceso de análisis y los algoritmos seleccionados para cada caso, en cuanto a la sección 3 se describen todas las fases que se ha aplicado a los datos, por otro lado, en la sección 4 se describen las conclusiones obtenidas,
 y por último, se recogen las asignaciones y definiciones del trabajo realizado por cada subequipo.
 
 ## Sección 1. Descripción del problema planteado
@@ -123,25 +123,34 @@ Para todos los casos se realizaron diferentes pruebas de afinación del algoritm
 Tras realizar una comparativa entre los tres modelos entrenados, se visualizaron las distintas predicciones y se seleccionó el modelo generado con xgbTree para la predicción final.
 
 ### Análisis avanzado. Clustering
-La aplicación de algoritmos No Supervisados se ha dividido en dos análisis fundamentales. En primer lugar, se realizó un estudio de Clustering sobre los datos "Bike Rental data". Tal y como se esperaba tras la realización del notebook básico, los datos no se distribuyen de forma dispersa, aspecto que incrementaba la dificultad de extraer información de las agrupaciones. Por ello, en segundo lugar, se seleccionó un nuevo problema a resolver con datos más adecuados para el empleo de modelos de agrupación.
+En los siguientes apartados se detallan los pasos y las decisiones tomadas en cada una de las etapas realizadas para el nivel de análisis avanzado, en el cual se han desarrollado y puesto en práctica principalmente técnicas de Clustering para la agrupación de países con mayores dificultades sociales y económicas.
+
+Destacar que la aplicación de algoritmos No Supervisados se ha dividido en dos análisis fundamentales. En primer lugar, se realizó un estudio de Clustering sobre los datos "Bike Rental data". Tal y como se esperaba tras la realización del notebook básico, los datos no se distribuyen de forma dispersa, aspecto que incrementaba la dificultad de extraer información de las agrupaciones. Por ello, en segundo lugar, se seleccionó un nuevo problema a resolver con datos más adecuados para el empleo de modelos de agrupación.
 
 #### Análisis y preprocesado de los datos
-En cuanto al análisis y preprocesado de los datos "Country data" se aplica la misma lógica en el notebook básico. Antes de la limpieza y transformación del dataset, se estudian las variables que se contemplan en la resolución del problema. Posteriormente, tiene lugar la búsqueda de valores perdidos, la detección y estudio de los outliers y se observa la correlación entre las diferentes variables. Finalmente, para aplicar los algoritmos de Clustering, se examina si las variables son de clase numérica y se escalan los datos seleccionados.
+En cuanto al análisis y preprocesado de los datos "Country data" se aplica la misma lógica en el notebook básico. Antes de la limpieza y transformación del dataset, se estudian las variables que se contemplan en la resolución del problema. Posteriormente, tiene lugar la búsqueda de valores perdidos, la detección y estudio de los outliers y además, se observa la correlación entre las diferentes variables. Finalmente, para aplicar los algoritmos de Clustering, se examina si las variables son de clase numérica y se escalan los datos seleccionados.
 
 Para completar todos los retos que se plantéan en esta etapa, se utilizan los siguientes paquetes: de tidyverse para manipulación de los datos y visualización, de Visadat para búsqueda de valores nulos, de ggplot2 para visualización y de corrplot para la correlación de las variables.
 
 #### Algoritmo Particional. K-means
-Acerca de la aplicación de Clustering Paticional, el primer paso es identificar el número de centros óptimo. Una vez se conoce el valor, se ejecuta el algoritmo K-means, que agrupa los ejemplos según la similitud de sus características. Además, para entender mejor los datos se realiza un análisis con mayor profundidad a través de gráficas y procesado de los datos agrupados por cluster.
+Acerca de la aplicación de Clustering Paticional, el primer paso es identificar el número de centros óptimo con el método K-means. Una vez se conoce el valor, se ejecuta el algoritmo K-means, que agrupa los ejemplos según la similitud de sus características. Además, para entender mejor los datos se realiza un análisis con mayor profundidad a través de gráficas y procesado de los datos agrupados por cluster.
 
 Para completar estas tareas se hace uso de las librerías anteriores y de NbClust y factoextra para la visualización de los clusters.
 
 #### Clustering Jerárquico
-Respecto al Clustering Jerárquico se emplean dos métodos diferentes "complete" y "single". Ambos permiten estudiar el dendograma de forma visual donde las agrupaciones en se generan en forma de árbol donde cada rama es un cluster. Además, para comparar y estudiar los resultados obtenidos, se emplean gráficas y se procesan los datos que se han agrupado en los distintos clusters.
+Respecto al Clustering Jerárquico se emplean dos métodos diferentes "complete" y "single". Ambos permiten estudiar el dendograma de forma visual donde las agrupaciones en se generan en forma de árbol donde cada rama es un cluster. Al igual que en el anterior, el primer paso es identificar el número de centros óptimo con el método hcut. Tras la aplicación de los algoritmos, con el fin de comparar y estudiar los resultados obtenidos, se emplean gráficas y se procesan los datos que se han agrupado en los distintos clusters.
 
 En esta etapa, se utilizan todas las librerías anteriores y además se añade ape, que mejora la visualización de los dendogramas.
 
 ## Sección 4. Conclusiones
 
+### Análisis básico. Regresión
+
+### Análisis avanzado. Clustering
+Las conclusiones obtenidas tras la ejecución de algoritmos de Clustering sobre los problemas presentados son las siguientes:
+- Bikes Rental data: se generan 6 clústeres con diferentes características, de las que se puede destacar que a temperaturas cálidas superiores a 30º, humedad óptima y en las estaciones primavera, verano u otoño, el número de bicicletas que se alquilan es mucho mayor. Por otro lado, otra de las agrupaciones destaca por ser ejemplos registrados durante la madrugada. Para obtener mayor información consultar el notebook con el análisis avanzado.
+
+- Country data: se generan 5 clústers con diferentes características desde los países más necesitados a los menos. Se puede destacar que aproximadamente unos 50 países que requieren ayuda internacional, entre todos ellos el que más necesidades presenta es Nigeria. Para obtener mayor información consultar el notebook con el análisis avanzado.
 
 ## Sección 5. Subdivisión y descripción del trabajo por cada subequipo
 
