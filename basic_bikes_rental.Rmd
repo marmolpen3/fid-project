@@ -40,9 +40,17 @@ El resto del documento se organiza de la siguiente forma: en la sección 1 se re
 Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos y de ***ggplot2*** para visualización.
 
 ```{r}
+# Install these packages from console command line
+#install.packages("tidyverse")
+#install.packages("visdat")
+#install.packages("ggplot2")
+#install.packages("gridExtra")
+#install.packages("corrpolot")
+
 library(tidyverse)
 library(visdat)
 library(ggplot2)
+library(gridExtra)
 library(corrplot)
 ```
 
@@ -385,6 +393,8 @@ Al examinar el mapa con los valores de la correlación tenemos que el mayor r ob
 Aunque aplicar un modelo de regresión lineal no tiene sentido para este conjunto de datos, se va generar el modelo lineal a modo de estudio del problema, con el fin de demostrar que no aporta valor realizar una predicción de este tipo. En la siguiente sección, se indagará sobre modelos de regresión no lineal obteniendo unos mejores resultados.
 
 ```{r}
+set.seed(2023)
+
 # Construcción del modelo en base al resto de variables 
 lm_bikes <- lm(num_bikes ~ ., data = train_bikes)
 
@@ -403,6 +413,8 @@ head(train_bikes_short)
 A pesar de eliminar estos atributos poco significativos, el valor de R-squared no varía.
 
 ```{r}
+set.seed(2023)
+
 # Construcción del modelo en base al resto de variables 
 lm_bikes_short <- lm(num_bikes ~ ., data = train_bikes_short)
 
@@ -429,21 +441,25 @@ sample_1 <- train_bikes %>%
 
 expected_value <- train_bikes %>%
                     slice_head(n = 1)
-  
+
+cat("Valores originales:\n")  
 expected_value[1, 11]
+cat("Predicción:\n")
 predict(lm_bikes_short, sample_1)
 
 ```
 
 Se puede observar que hay un importante desajuste en la predicción, siendo esta de 325 bicicletas para un valor esperado de 133.
 
-## Algoritmos Caret
+## Caret Package
 
 En este punto, vamos a generar distintos modelos con varios métodos que incluye el paquete Caret. A partir de estos modelos, los cuales son creados a partir del subconjunto de entrenamiento, se procederá a la predicción del número de bicicletas alquiladas para cada uno de los ejemplos del subconjunto de prueba.
 
 Antes de comenzar, se carga el paquete Caret.
 
 ```{r}
+#install.packages("caret")
+
 library(caret)
 ```
 
@@ -462,7 +478,7 @@ Con esto, tomaremos el subconjunto de entrenamiento, el cual se usará para prep
 head(train_bikes)
 ```
 
-### Random Forest
+### rf
 
 Acto seguido, se procede a crear un primer modelo de regresión, utilizando el método Random Forest. Para ello, se ha decidido optar por parametrizar el argumento ntree con un valor de 5, ya que el algoritmo toma un tiempo de ejecución considerable para mayores superiores sin que tampoco mejore el rendimiento.
 
@@ -471,6 +487,7 @@ También se ha optado por entrenar dos modelos y elegir el mejor: uno en el que 
 En este primer paso también se opta por personalizar los parámetros del algoritmo Random Forest, pasando los parámetros como argumento tuneGrid.
 
 ```{r}
+set.seed(2023)
 rfGrid <- expand.grid(mtry = c(2,4,6,8,10))
 
 model_rf_reg <- train(num_bikes ~ .,
@@ -487,6 +504,7 @@ model_rf_reg
 En el segundo caso, se hace ejecuta el mismo algoritmo pero sin considerar los atributos holiday, workingday, weather y temp.
 
 ```{r}
+set.seed(2023)
 rfGrid <- expand.grid(mtry = c(2,3,4,5,6))
 
 model_rf_reg2 <- train(num_bikes ~ .,
@@ -503,9 +521,9 @@ model_rf_reg2
 
 Como se puede observar, el mejor modelo obtenido limitando las variables predictoras no supera al que se obtiene cuando se las considera a todas.
 
--   Modelo 1: R-squared de 0.9225
+-   Modelo 1: R-squared de 0.9203
 
--   Modelo 2: R-squared de 0.7301
+-   Modelo 2: R-squared de 0.7274
 
 ```{r}
 resamps_rf <- resamples(list(
@@ -520,9 +538,9 @@ bwplot(resamps_rf, metric = "Rsquared")
 De este modo, se opta por el primer modelo para realizar una predicción de prueba, al igual que se hizo con la regresión lineal.
 
 ```{r}
-# Predecimos el número de bicicletas del primer ejemplo del dataset
 sample_1 <- train_bikes %>%
-  slice_head(n = 6)
+  slice_head(n = 6) %>%
+  select(-num_bikes)
 
 expected_value <- train_bikes %>%
                     slice_head(n = 6)
@@ -535,6 +553,162 @@ floor(predict(model_rf_reg, sample_1))
 
 A través del modelo generado con Random Forest se obtiene una predicción algo más ajustada al caso esperado. Por seguir con el primer ejemplo del conjunto de entrenamiento, la predicción indica 148 bicicletas alquiladas para las 133 esperadas por el caso real.
 
+### xgbTree
+
+Una de las librerías más populares de aprendizaje automático que ha demostrado una gran eficiencia y escalabilidad es XGBoost. El paquete Caret incluye entre sus funciones una implementación de la API de XGBoost para R. Se trata del método xgbTree.
+
+Se va a hacer uso de este método para generar un modelo predictivo, tomando como punto de partida el modelo generado con los parámetros por defecto y todas las variables del subconjunto de entrenamiento como predictoras.
+
+```{r}
+set.seed(2023)
+
+model_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  trControl = fitControl)
+```
+
+Se puede ver que el algoritmo toma su tiempo, ya que hace varias combinaciones de parámetros. En la siguiente traza de ejecución de obtienen los resultado de estas combinaciones.
+
+```{r}
+model_xgbTree
+```
+
+El modelo resultante obtenido fija como parámetros de afinación 150 árboles, con una profundidad máxima 3, tasa de aprendizaje de 40% y un 80% de las columnas usadas por árbol.
+
+Además, el parámetro min_child_weight indica la cantidad mínima de datos que deben estar presentes en los nodos hoja del árbol. Esto significa que si un nodo tiene un peso menor que el valor especificado, se convertirá en un nodo hoja y no se dividirá más. Por tanto cuanto mayor sea este valor, más simple será el árbol resultante. En este caso el valor es 1.
+
+Por último, el parámetro subsample representa el porcentaje de observaciones a usar en cada iteración del entrenamiento, que corresponde al 100%.
+
+El R-squared obtenido es de 0.9169 para este caso.
+
+A continuación, se procede a realizar una serie de combinaciones de los parámetros comentados anteriormente para mejorar el rendimiento y reducir el error.
+
+```{r}
+set.seed(2023)
+
+tune_grid = expand.grid(
+  nrounds = 150,
+  max_depth = 5,
+  eta = 0.1,
+  gamma = 0,
+  colsample_bytree = 0.8,
+  min_child_weight = 1,
+  subsample = 0.8
+  )
+
+model_tuned_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = tune_grid,
+  trControl = fitControl)
+
+model_tuned_xgbTree
+```
+
+```{r}
+set.seed(2023)
+
+tune_grid = expand.grid(
+  nrounds = 150,
+  max_depth = 7,
+  eta = 0.1,
+  gamma = 0.8,
+  colsample_bytree = 1,
+  min_child_weight = 0,
+  subsample = 1
+  )
+
+model_tuned_xgbTree <- train(
+  num_bikes ~ .,
+  train_bikes,
+  method = "xgbTree",
+  tuneGrid = tune_grid,
+  trControl = fitControl,
+  metric = "Rsquared")
+
+model_tuned_xgbTree
+```
+
+Tras ejecutar diferentes pruebas se consigue optimizar el R-squared hasta un valor de 0.9429 aproximadamente.
+
+```{r}
+densityplot(model_tuned_xgbTree, pch="|")
+```
+
+Para ello, se han aplicado los siguientes parámetros de afinación: 150 árboles, con profundidad máxima 7, tasa de aprendizaje del 10%, el 100% de columnas usadas por árbol y un 100% de observaciones usadas en cada iteración del entrenamiento.
+
+Aunque aumenta la complejidad con respecto al modelo anterior, también aumenta la precisión, como se puede observar en el valor de R-squared.
+
+Por último, se comprueba si el algoritmo mejora los resultados sin considerar los atributos holiday, workingday, weather y temp. El valor de R-squared disminuye en la misma medida que se comprobó para el modelo Random Forest.
+
+```{r}
+set.seed(2023)
+
+model_tuned_xgbTree_2 <- train(
+  num_bikes ~ .,
+  train_bikes %>%
+    select(-holiday, -workingday, -weather, -temp),
+  method = "xgbTree",
+  tuneGrid = expand.grid(
+    nrounds = 150, max_depth = 7, eta = 0.1, gamma = 0.8, colsample_bytree = 1, min_child_weight = 0, subsample = 1
+  ),
+  trControl = fitControl)
+
+model_tuned_xgbTree_2
+```
+
+Tras probar a eliminar los atributos realizando combinaciones diferentes, se observa que manteniendo los atributos weather y workingday, el valor de R-squared se mantiene relativamente estable, aunque no alcanza al obtenido sin eliminar variables.
+
+```{r}
+set.seed(2023)
+
+model_tuned_xgbTree_3 <- train(
+  num_bikes ~ .,
+  train_bikes %>%
+    select(-holiday, -temp),
+  method = "xgbTree",
+  tuneGrid = expand.grid(
+    nrounds = 150, max_depth = 7, eta = 0.1, gamma = 0.8, colsample_bytree = 1, min_child_weight = 0, subsample = 1
+  ),
+  trControl = fitControl)
+
+model_tuned_xgbTree_3
+```
+
+Finalmente, al evaluar los modelos que se han creado con xgbTree, nos decantamos por el de mayor valor en R-squared, el modelo afinado mediante los parámetros.
+
+```{r}
+resamps_rf <- resamples(list(
+  DEFAULT_XGB = model_xgbTree,
+  TUNED_XGB = model_tuned_xgbTree,
+  TUNED_XGB2 = model_tuned_xgbTree_2,
+  TUNED_XGB3 = model_tuned_xgbTree_3
+))
+summary(resamps_rf, metric = "Rsquared")
+bwplot(resamps_rf, metric = "RMSE")
+bwplot(resamps_rf, metric = "Rsquared")
+bwplot(resamps_rf, metric = "MAE")
+```
+
+Aquí se realiza la predicción de muestra como en los casos anteriores. Como se puede observar, la predicción se ajusta bastante con los casos reales.
+
+```{r}
+sample_1 <- train_bikes %>%
+  slice_head(n = 6) %>%
+  select(-num_bikes)
+
+expected_value <- train_bikes %>%
+                    slice_head(n = 6)
+
+cat("Valores originales:\n")  
+expected_value[1:6, 11]
+cat("Predicción:\n")
+floor(predict(model_tuned_xgbTree, sample_1))
+```
+
 ### gbm
 
 En este caso se utiliza el algoritmo Stochastic Gradient Boosting mediante el método gbm del paquete Caret. Aquí se ha optado por ver qué modelo retorna el método sin parametrizar, con los valores por defecto y, posteriormente, ver cómo rinde el modelo generado tras imputar de forma personalizada los valores de los parámetros del algoritmo.
@@ -542,6 +716,8 @@ En este caso se utiliza el algoritmo Stochastic Gradient Boosting mediante el m�
 En este primer fragmento de código, se utilizan los parámetros por defecto.
 
 ```{r}
+set.seed(2023)
+
 model_gbm_reg <- train(
   num_bikes ~ .,
   train_bikes,
@@ -559,7 +735,7 @@ densityplot(model_gbm_reg, pch="|")
 
 El modelo se obtiene fijando el learning rate (shrinkage) constante a 0.1 para 150 árboles y un máximo de nodos por árbol de 3, parámetros n.tree e interaction.depth respectivamente.
 
-El R-squared obtenido es de 0.8654 para este caso.
+El R-squared obtenido es de 0.8663 para este caso.
 
 Acto seguido, se genera un segundo modelo parametrizado, basándonos en las investigaciones que se han realizado para este algoritmo: [referencia 1](https://www.listendata.com/2015/07/gbm-boosted-models-tuning-parameters.html) y [referencia 2](https://stackoverflow.com/questions/15613332/using-caret-package-to-find-optimal-parameters-of-gbm).
 
@@ -570,6 +746,8 @@ Por otro lado, a menor learning rate, mayor deberá ser el número de árboles, 
 Por último, el valor de interaction.depth suele ser un valor bajo, pero en [referencia 2](https://stackoverflow.com/questions/15613332/using-caret-package-to-find-optimal-parameters-of-gbm) se recomienda utilizar la fórmula que, finalmente, se aplica en el siguiente fragmente de código, donde se genera el nuevo modelo.
 
 ```{r}
+set.seed(2023)
+
 # Fórmulas obtenidas en la referencia 2
 shrinkage <- max(0.01, 0.1 * min(1, nrow(train_bikes) / 10000))
 interaction.depth <- floor(sqrt(ncol(train_bikes)))
@@ -613,9 +791,9 @@ bwplot(resamps_gbm, metric = "Rsquared")
 Tras esto, nos decantamos por el segundo modelo, el cual se obtiene ajustando los parámetros. Finalmente, realizamos también una estimación de prueba como en los casos anteriores.
 
 ```{r}
-# Predecimos el número de bicicletas del primer ejemplo del dataset
 sample_1 <- train_bikes %>%
-  slice_head(n = 6)
+  slice_head(n = 6) %>%
+  select(-num_bikes)
 
 expected_value <- train_bikes %>%
                     slice_head(n = 6)
@@ -628,158 +806,125 @@ floor(predict(model_gbm_reg2, sample_1))
 
 Se puede concluir este apartado comentando la mejora en la predicción, aunque se siguen observando algunos desajustes.
 
-### xgbTree
-
-Una de las librerías más populares de aprendizaje automático, y que ha demostrado una gran eficiencia y escalabilidad es XGBoost. El paquete caret incluye entre sus funciones una implementación de la API de XGBoost para R. Se trata de la función xgbTree.
-
-Como tercera opción a comparar, se va a hacer uso de este método, tomando como punto de partida el modelo por defecto con todas las variables predictoras.
-
-```{r}
-model_xgbTree <- train(
-  num_bikes ~ .,
-  train_bikes,
-  method = "xgbTree",
-  trControl = fitControl)
-```
-
-```{r}
-model_xgbTree
-```
-
-El modelo resultante obtenido fija como parámetros de afinación 150 árboles, con una profundidad máxima 3, tasa de aprendizaje de 40% y un 80% de las columnas usadas por árbol.
-
-Además, el parámetro min_child_weight indica la cantidad mínima de datos que deben estar presentes en los nodos hoja del árbol. Esto significa que si un nodo tiene un peso menor que el valor especificado, se convertirá en un nodo hoja y no se dividirá más. Por tanto cuanto mayor sea este valor, más simple será el árbol resultante. En este caso el valor es 1.
-
-Por último, el parámetro subsample representa el porcentaje de observaciones a usar en cada iteración del entrenamiento, que corresponde al 100%.
-
-```{r}
-default_tune_grid <- expand.grid(
-  nrounds = 150,
-  max_depth = 3,
-  eta = 0.4,
-  gamma = 0,
-  colsample_bytree = 0.8,
-  min_child_weight = 1,
-  subsample = 1
-  )
-
-model_xgbTree <- train(
-  num_bikes ~ .,
-  train_bikes,
-  method = "xgbTree",
-  tuneGrid = default_tune_grid,
-  trControl = fitControl)
-
-model_xgbTree
-```
-
-El R-squared obtenido es de 0.9176 para este caso.
-
-A continuación, se procede a realizar una serie de combinaciones de los parámetros comentados anteriormente para mejorar el error:
-
-```{r}
-tune_grid = expand.grid(
-  nrounds = 150,
-  max_depth = 5,
-  eta = 0.1,
-  gamma = 0,
-  colsample_bytree = 0.8,
-  min_child_weight = 1,
-  subsample = 0.8
-  )
-
-model_tuned_xgbTree <- train(
-  num_bikes ~ .,
-  train_bikes,
-  method = "xgbTree",
-  tuneGrid = tune_grid,
-  trControl = fitControl)
-
-model_tuned_xgbTree
-```
-
-```{r}
-tune_grid = expand.grid(
-  nrounds = 150,
-  max_depth = 7,
-  eta = 0.1,
-  gamma = 0.8,
-  colsample_bytree = 1,
-  min_child_weight = 0,
-  subsample = 1
-  )
-
-model_tuned_xgbTree <- train(
-  num_bikes ~ .,
-  train_bikes,
-  method = "xgbTree",
-  tuneGrid = tune_grid,
-  trControl = fitControl)
-
-model_tuned_xgbTree
-```
-
-Tras ejecutar diferentes pruebas se consigue optimizar el R-squared hasta un valor de 0.943 aproximandamente.
-
-Para ello, se han aplicado los siguientes parámetros de afinación: 150 árboles, con profundidad máxima 7, tasa de aprendizaje del 10%, el 100% de columnas usadas por árbol y un 100% de observaciones usadas en cada iteración del entrenamiento.
-
-Aunque aumenta la complejidad con respecto al modelo anterior, también aumenta la precisión, como se puede observar en el valor de R-squared.
-
-Por último, se comprueba si el algoritmo mejora los resultados sin considerar los atributos holiday, workingday, weather y temp. El valor de R-squared disminuye en la misma medida que se comprobó para el modelo Random Forest.
-
-```{r}
-model_tuned_xgbTree_2 <- train(
-  num_bikes ~ .,
-  train_bikes %>%
-    select(-holiday, -workingday, -weather, -temp),
-  method = "xgbTree",
-  tuneGrid = expand.grid(
-    nrounds = 150, max_depth = 7, eta = 0.1, gamma = 0.8, colsample_bytree = 1, min_child_weight = 0, subsample = 1
-  ),
-  trControl = fitControl)
-
-model_tuned_xgbTree_2
-```
-
-Tras probar a eliminar los atributos realizando combinaciones diferentes, se observa que manteniendo los atributos weather y workingday, el valor de R-squared se mantiene relativamente estable, aunque no alcanza al obtenido sin eliminar variables.
-
-```{r}
-model_tuned_xgbTree_3 <- train(
-  num_bikes ~ .,
-  train_bikes %>%
-    select(-holiday, -temp),
-  method = "xgbTree",
-  tuneGrid = expand.grid(
-    nrounds = 150, max_depth = 7, eta = 0.1, gamma = 0.8, colsample_bytree = 1, min_child_weight = 0, subsample = 1
-  ),
-  trControl = fitControl)
-
-model_tuned_xgbTree_3
-```
-
-Finalmente, al evaluar los modelos que se han creado, se obtiene que el mejor modelo es el que tiene aplicados los parámetros de afinación y eliminadas las variables holiday y temp (TUNED_XGB3).
-
-```{r}
-resamps_rf <- resamples(list(
-  DEFAULT_XGB = model_xgbTree,
-  TUNED_XGB = model_tuned_xgbTree,
-  TUNED_XGB2 = model_tuned_xgbTree_2,
-  TUNED_XGB3 = model_tuned_xgbTree_3
-))
-summary(resamps_rf, metric = "Rsquared")
-bwplot(resamps_rf, metric = "Rsquared")
-```
-
-Aquí se representa la predicción correspondiente modelo seleccionado:
-
-```{r}
-predict(model_tuned_xgbTree_3, newdata = head(train_bikes))
-
-plot(x=predict(model_tuned_xgbTree_3), y= train_bikes$num_bikes,
-     xlab='Predicted Values',
-     ylab='Actual Values',
-     main='Predicted vs. Actual Values')
-abline(a = 0, b = 1, col = "red", lwd = 2)
-```
-
 ## Comparativa de modelos
+
+En esta última sección se va a proceder a comparar los modelos generados y seleccionados con los distintos métodos incluidos en el paquete Caret que han sido utilizados previamente.
+
+Para esto, se utilizará la función resamples y se observará qué modelo ofrece mejor rendimiento y un menor error.
+
+```{r}
+resamps <- resamples(list(
+  RF = model_rf_reg,
+  XGBTREE = model_tuned_xgbTree,
+  GBM = model_gbm_reg2
+))
+
+summary(resamps)
+```
+
+Vamos a observar el rendimiento en base a las métricas: R-squared, RMSE y MAE.
+
+```{r}
+summary(resamps, metric = "Rsquared")
+bwplot(resamps, metric = "Rsquared")
+```
+
+```{r}
+summary(resamps, metric = "RMSE")
+bwplot(resamps, metric = "RMSE")
+```
+
+```{r}
+summary(resamps, metric = "MAE")
+bwplot(resamps, metric = "MAE")
+```
+
+En función de todas estas medidas, Random Forest presenta un mejor rendimiento y mayor precisión con respecto a gbm para el conjunto de datos de entrenamiento. Aunque la diferencia es mínima, nos ayudaremos de la visualización para determinar la elección del modelo de predicción definitivo.
+
+Vamos a graficar la predicción con cada uno de estos modelos junto con el valor real de cada ejemplo, de modo que podamos ver de manera visual las desviaciones. Para ello, en primer lugar se ha realizado una selección de ejemplos del subconjunto de entrenamiento, en el que se dispone del número de bicicletas alquiladas (se han seleccionado casos en los que se alquilan menos de 400 bicicletas). Posteriormente, se implementa una función que recibe el modelo y el conjunto de datos originales para los que se realiza la predicción.
+
+Como resultado, se obtiene la tabla de los datos comparativos, una gráfica con los valores superpuestos y otra gráfica de puntos donde se enfrentan los valores.
+
+```{r}
+sample_train_bikes <- train_bikes %>%
+  filter(num_bikes < 400) %>%
+  slice_head(n = 100)
+
+plot_real_and_predict <- function(model, data) {
+  sample_predict <- data %>%
+    select(-num_bikes)
+  
+  res_predict <- predict(model, sample_predict)
+  res_predict <- data.frame(floor(res_predict))
+  names(res_predict)[1] <- "num_bikes"
+  
+  p1 <- ggplot() +
+  geom_area(data = data,
+            aes(x = 1:nrow(data), y = num_bikes),
+            alpha = 0.6,
+            color = "red",
+            fill = "red") +
+  geom_area(data = res_predict,
+            aes(x = 1:nrow(res_predict), y = num_bikes),
+            alpha = 0.4,
+            color = "blue",
+            fill = "blue") +
+  labs(x = "Casos") +
+    theme_bw()
+  
+  both_data <- data.frame(x1 = data$num_bikes, x2 = res_predict)
+  names(both_data) <- c("real", "prediction")
+  
+  p2 <- ggplot() +
+  geom_point(data = both_data,
+             aes(x = prediction, y = real)) +
+  geom_abline(intercept = 0, slope = 1, color = "red2") +
+  theme_bw()
+  
+  grid.arrange(p1, p2, nrow = 2)
+  
+  return(both_data)
+}
+```
+
+Vamos a observar la predicción para el modelo de Random Forest.
+
+El espectro azul representa la predicción, mientras que el espectro rojo el valor real para los mismos casos.
+
+```{r}
+predict_rf <- plot_real_and_predict(model_rf_reg, sample_train_bikes)
+predict_rf
+```
+
+Podemos ver que Random Forest ajusta bastante la predicción a los casos reales. En la gráfica de la recta ideal podemos ver algunas dispersiones, pero, por lo general, los resultados no son malos, no ofreciendo ninguna predicción con valor negativo.
+
+Ahora, se va a representar la predicción con el modelo generado con xgbTree.
+
+```{r}
+predict_xgbTree <- plot_real_and_predict(model_tuned_xgbTree, sample_train_bikes)
+predict_xgbTree
+```
+
+Se observan algunas imprecisiones, como algunos valores negativos, pero podemos ver que ajusta también bastante bien, al igual que el modelo generado con Random Forest.
+
+Por último, se visualiza la predicción para el modelo gbm.
+
+```{r}
+predict_gbm <- plot_real_and_predict(model_gbm_reg2, sample_train_bikes)
+predict_gbm
+```
+
+Con este modelo se obtienen peores resultados. Se puede observar un nivel de error mayor. Como detalle, se dan valores negativos más acentuados y la gráfica de la recta ideal presenta una mayor dispersión de puntos.
+
+Por tanto, aunque tanto el modelo generado con Random Forest como el generado con el método xgbTree son bastante similares, se opta por seleccionar este último para la predicción final, ya que es el modelo que consigue la mejor calificación en cuanto a R-squared y también tienen un menor nivel de error.
+
+## Predicción final
+
+Finalmente, con el modelo seleccionado, se procede a la predicción de valores para el subconjunto de test.
+
+```{r}
+final_prediction <- floor(predict(model_tuned_xgbTree, newdata = test_bikes))
+test_bikes["predicted_bikes"] <- final_prediction
+
+test_bikes
+```
