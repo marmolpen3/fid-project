@@ -11,9 +11,10 @@ install.packages("corrplot")
 install.packages("NbClust")
 install.packages("factoextra")
 install.packages("ape")
+install.packages("clValid")
 ```
 
-Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización, de **corrplot** para la correlación de las variables y de **NbClust** y **factoextra** para clustering, por último, de **ape** para la representación de los dendogramas.
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización, de **corrplot** para la correlación de las variables, de **NbClust** y **factoextra** para clustering, **ape** para la representación de los dendogramas y por último, **clValid** para la comparación entre algoritmos.
 
 ```{r}
 library(tidyverse)
@@ -23,6 +24,7 @@ library(corrplot)
 library(NbClust)
 library(factoextra)
 library(ape)
+library(clValid)
 ```
 
 # Introducción
@@ -117,31 +119,30 @@ summary(scaled_bikes)
 
 #### Clustering Particional
 
-Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*. Se omite la ejecución con el modelo *gap_stat* por ser costoso al no converger los datos, el resultado obtenido es que el número de clusters óptimo es K = 10.
+Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar similitudes entre los ejemplos. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*. Se omite la ejecución con el modelo *gap_stat* por ser costoso al no converger los datos.
 
 ```{r}
 
-fviz_nbclust(scaled_bikes, FUN = hcut, method = "silhouette")
-fviz_nbclust(scaled_bikes, FUN = hcut, method = "wss")
-#fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
+fviz_nbclust(scaled_bikes, FUN = kmeans, method = "silhouette")
+fviz_nbclust(scaled_bikes, FUN = kmeans, method = "wss")
 
 ```
 
-Siguiendo las recomendaciones de los métodos *silhouette* y *wss*, se aplica el algoritmo **k-means** para k = 4. Es decir, se van a obtener 4 agrupaciones de los datos según sus características.
+Siguiendo las recomendaciones de los métodos *silhouette* y *wss*, se aplica el algoritmo **k-means** para k = 6. Es decir, se van a obtener 6 agrupaciones de los datos según sus características.
 
 ```{r}
 # Aseguramos la reproducibilidad, establecemos la semilla del generador de números aleatorios
 seed_val <- 10
 set.seed(seed_val)
 # Número de clusters
-k = 4
+k = 6
 # Aplicamos k-means
 bikes_clust <- kmeans(scaled_bikes, centers = k)
 # Ejemplos por grupos
 bikes_clust$size
 ```
 
-La cantidad de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 2. Los analizamos con mayor profundidad a través de gráficas.
+La cantidad de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 5. Los analizamos con mayor profundidad a través de gráficas.
 
 ```{r}
 # Añadimos la columna adicional con el número del cluster al que pertenece cada ejemplo
@@ -201,13 +202,17 @@ summary_bikes_kmeans
 
 De estas gráficas podemos obtener algunas conclusiones:
 
--   Cluster 1 (núm ejemplos: 686) : Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
+-   Cluster 1 (núm ejemplos: 586 ) : Destaca principalmente por ser ejemplos que sea cual sea la estación del año, suelen tener mal tiempo y mayor humedad.
 
--   Cluster 2 (núm ejemplos: 1314) : Se dan todas las condiciones para que se alquilen más bicicletas, buen tiempo, buena temperatura, humedad óptima y en primavera, verano u otoño.
+-   Cluster 2 (núm ejemplos: 830 ) : Se dan todas las condiciones para que se alquilen más bicicletas, debido a temperaturas cálidas superiores a 30º, humedad óptima y suelen ser en primavera, verano u otoño.
 
--   Cluster 3 (núm ejemplos: 740) : Su principal característica es que son datos que pertenecen a la estación de invierno y por tanto, el número de bicicletas que se alquilan son menos durante el día.
+-   Cluster 3 (núm ejemplos: 705 ) : Su principal característica es que son datos que pertenecen a la estación de invierno y por tanto, el número de bicicletas que se alquilan son menos durante el día.
 
--   Cluster 4 (núm ejemplos: 909) : Ejemplos que suelen encontrarse entre las 12pm y las 6am.
+-   Cluster 4 (núm ejemplos: 807 ) : Ejemplos que suelen encontrarse durante la madrugada.
+
+-   Cluster 5 (núm ejemplos: 106 ) : Registros de uso en días con vacaciones.
+
+-   Cluster 6 (núm ejemplos: 615) : Agrupación similar a la 2 pero con sensaciones térmicas menores y agradables. Aún así, el número de bicicletas alquiladas es menor. Se da mayoritariamente en las estaciones de primera y otoño.
 
 -   Las horas en las que se alquilan menos bicicletas son de 12pm a 6am y normalmente suele darse en primavera, verano y otoño, rara vez en invierno. Suelen tener buenas condiciones temporales.
 
@@ -216,6 +221,16 @@ De estas gráficas podemos obtener algunas conclusiones:
 #### Clustering Jerárquico
 
 Existen varios métodos para aplicar el [Clustering Jerárquico](https://rpubs.com/mjimcua/clustering-jerarquico-en-r), vamos a hacer uso de los métodos complete y single. Para calcular la distancia entre ejemplos se emplea la función [dist](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist) que por defecto usa el método *euclidean.*
+
+El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*. Se omite la ejecución con el modelo *gap_stat* por ser costoso al no converger los datos, el resultado obtenido es que el número de clusters óptimo es K = 10.
+
+```{r}
+fviz_nbclust(scaled_bikes, FUN = hcut, method = "silhouette")
+fviz_nbclust(scaled_bikes, FUN = hcut, method = "wss")
+#fviz_nbclust(scaled_bikes, FUN = hcut, method = "gap_stat")
+```
+
+Siguiendo las recomendaciones de los métodos *silhouette* y *wss*, se aplican ambos algoritmos **jerárquicos** para k = 4. Es decir, se van a obtener 4 agrupaciones de los datos según sus características.
 
 #### Clustering Jerárquico: Complete
 
@@ -377,28 +392,28 @@ summary(country_data_scale)
 Tras escalar los datos correctamente, damos paso a la aplicación del algoritmo particional **k-means** con el fin de identificar los paises más necesitados. El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*.
 
 ```{r}
-fviz_nbclust(country_data_scale, FUN = hcut, method = "silhouette")
-fviz_nbclust(country_data_scale, FUN = hcut, method = "wss")
-fviz_nbclust(country_data_scale, FUN = hcut, method = "gap_stat")
+fviz_nbclust(country_data_scale, FUN = kmeans, method = "silhouette")
+fviz_nbclust(country_data_scale, FUN = kmeans, method = "wss")
+fviz_nbclust(country_data_scale, FUN = kmeans, method = "gap_stat")
 ```
 
-Con el algoritmo *silhouette*, obtenemos que el número de centros ideal sería de 2. El algoritmo *wss*, nos dice que, aproximadamente, entre 2 y 5 serían el número de centros ideales. Por último, el algoritmo *gap_stat*, nos indica que 3 es la mejor aproximación.
+Con el algoritmo *silhouette*, obtenemos que el número de centros ideal sería de 5. El algoritmo *wss*, nos dice que, aproximadamente, entre 2 y 6 serían el número de centros ideales. Por último, el algoritmo *gap_stat*, nos indica que 3 es la mejor aproximación.
 
-Por tanto, realizando una media entre los valores obtenidos en cada algoritmo, hemos decidido seleccionar 3 centros.
+Por tanto, realizando una media entre los valores obtenidos en cada algoritmo, hemos decidido seleccionar 5 centros.
 
 ```{r}
 # Aseguramos la reproducibilidad, establecemos la semilla del generador de números aleatorios
 seed_val <- 10
 set.seed(seed_val)
 # Número de clusters
-k = 3
+k = 5
 # Ejecutamos k-Means
 country_clust = kmeans(country_data_scale, centers = k)
 # Ejemplos por grupos
 country_clust$size
 ```
 
-El número de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 3. Realizamos un análisis con mayor profundidad a través de gráficas.
+El número de ejemplos que pertenece a cada cluster no se diferencia mucho, salvo el grupo 2. Realizamos un análisis con mayor profundidad a través de gráficas.
 
 ```{r}
 fviz_cluster(list(data = as.matrix(country_data_scale), cluster = country_clust$cluster), labels = 5)
@@ -428,7 +443,17 @@ mean_kmeans
 
 #### Clustering Jerárquico
 
-Existen varios métodos para aplicar el [Clustering Jerárquico](https://rpubs.com/mjimcua/clustering-jerarquico-en-r), vamos a hacer uso de los métodos complete y single. Para calcular la distancia entre ejemplos se emplea la función [dist](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist) que por defecto usa el método *euclidean.*
+Existen varios métodos para aplicar el [Clustering Jerárquico](https://rpubs.com/mjimcua/clustering-jerarquico-en-r), vamos a hacer uso de los métodos complete y single. Para calcular la distancia entre ejemplos se emplea la función [dist](https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/dist) que por defecto usa el método *euclidean.* El primer paso es [estimar el número](https://www.rdocumentation.org/packages/factoextra/versions/1.0.7/topics/fviz_nbclust) de centros que debemos definir, para ello, existen varios métodos como son *silhouette*, *wss* o *gap_stat*.
+
+```{r}
+fviz_nbclust(country_data_scale, FUN = hcut, method = "silhouette")
+fviz_nbclust(country_data_scale, FUN = hcut, method = "wss")
+fviz_nbclust(country_data_scale, FUN = hcut, method = "gap_stat")
+```
+
+Con el algoritmo *silhouette*, obtenemos que el número de centros ideal sería de 2. El algoritmo *wss*, nos dice que, aproximadamente, entre 2 y 5 serían el número de centros ideales. Por último, el algoritmo *gap_stat*, nos indica que 3 es la mejor aproximación.
+
+Por tanto, realizando una media entre los valores obtenidos en cada algoritmo, hemos decidido seleccionar 3 centros.
 
 #### Clustering Jerárquico: Complete
 
@@ -458,12 +483,14 @@ Los resultados obtenidos tienen similitud con los conseguidos por **K-means**.
 fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters), labels = 5)
 ```
 
+Resultado medio de los clústeres del método jerárquico completo.
+
 ```{r}
 
 sample_c_clusters_df <- data.frame(sample_c_clusters)
-contry_data_clust_df <- cbind(country_data_df, sample_c_clusters_df)
+country_data_clust_df <- cbind(country_data_df, sample_c_clusters_df)
 
-mean_data_complete <- contry_data_clust_df %>%
+mean_data_complete <- country_data_clust_df %>%
   group_by(sample_c_clusters) %>%
     summarise(n = n(),
         child_mort = mean(child_mort),
@@ -490,25 +517,27 @@ plot(hier_clust_c_single, cex = 0.6, hang = -1)
 ```
 
 ```{r}
-sample_c_clusters <- cutree(hier_clust_c_single, k = 3)
+sample_c_clusters_single <- cutree(hier_clust_c_single, k = 3)
 
 colors = c("red", "blue", "green")
-plot(as.phylo(hier_clust_c_single), type = "fan", tip.color = colors[sample_c_clusters],
+plot(as.phylo(hier_clust_c_single), type = "fan", tip.color = colors[sample_c_clusters_single],
      label.offset = 1, cex = 0.5)
 ```
 
 Los resultados obtenidos no se parecen al los anteriores modelos aplicados.
 
 ```{r}
-fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters), labels = 5)
+fviz_cluster(list(data = as.matrix(country_data_scale), cluster = sample_c_clusters_single), labels = 5)
 ```
 
-```{r}
-sample_c_clusters_df <- data.frame(sample_c_clusters)
-contry_data_clust_df <- cbind(country_data_df, sample_c_clusters_df)
+Resultado medio de los clústeres con método jerárquico simple.
 
-mean_data_complete <- contry_data_clust_df %>%
-  group_by(sample_c_clusters) %>%
+```{r}
+sample_c_clusters_single_df <- data.frame(sample_c_clusters_single)
+country_data_clust_single_df <- cbind(country_data_df, sample_c_clusters_single_df)
+
+mean_data_single <- country_data_clust_single_df %>%
+  group_by(sample_c_clusters_single) %>%
     summarise(n = n(),
         child_mort = mean(child_mort),
         exports = mean(exports),
@@ -520,15 +549,53 @@ mean_data_complete <- contry_data_clust_df %>%
         total_fer = mean(total_fer),
         gdpp = mean(gdpp))
 
-mean_data_complete 
-```
-
-```{r}
-contry_data_clust_df[contry_data_clust_df$sample_c_clusters == 3]
+mean_data_single 
 ```
 
 #### Conclusiones
 
-Si observamos los resultados obtenidos aplicando los diferentes modelos podemos deducir que el **Clustering Jerárquico** con método **Single** es el que peores resultados obtiene, puesto que dos de los clusters contienen un único ejemplo, aspecto que no consideramos correcto porque existen bastantes países con baja calidad de vida en el dataset.
+¿Cuáles son los países más desfavorecidos? Analizamos los países que se encuentran en el clúster con peor estadísticas según el estudio anterior.
 
-Sin embargo, tanto el algoritmo **k-means** como el **Clustering Jerárquico** con método **Complete** consiguen unos resultados con mayor calidad.
+Países que necesitan más ayuda según el algoritmo **k-means**.
+
+```{r}
+kmeans_data <- mutate(country_data_df, group_kmeans = country_clust$cluster)
+
+df1 <- kmeans_data[kmeans_data$group_kmeans == 5,]
+df1
+```
+
+Países que necesitan más ayuda según el algoritmo **jerárquico completo**.
+
+```{r}
+sample_c_clusters_df <- data.frame(sample_c_clusters)
+country_data_clust_df <- cbind(country_data_df, sample_c_clusters_df)
+
+df2 <- country_data_clust_df[country_data_clust_df$sample_c_clusters == 1,]
+df2
+```
+
+```{r}
+sample_c_clusters_single_df <- data.frame(sample_c_clusters_single)
+country_data_clust_single_df <- cbind(country_data_df, sample_c_clusters_single_df)
+
+df3 <- country_data_clust_df[country_data_clust_single_df$sample_c_clusters_single == 3,]
+df3
+```
+
+Visualizando y comparando los datos obtenidos encontramos que existen aproximadamente unos 50 países que requieren ayuda internacional, entre todos ellos el que más necesidades presenta es Nigeria.
+
+Respecto a la evaluación de los modelos, tras ejecutar la función *clValid* obtenemos que el algoritmo más adecuado para el dataset elegido es jerárquico con k=2 según la mayoría de métodos evaluados.
+
+```{r}
+comparacion <- clValid(
+                  obj = country_data_scale,
+                  nClust = 2:6,
+                  clMethods = c("hierarchical", "kmeans"),
+                  validation = c("stability", "internal")
+                  )
+
+summary(comparacion)
+```
+
+Si observamos los resultados obtenidos aplicando los diferentes modelos podemos deducir que los algoritmos **k-means** y **Clustering Jerárquico** con método **Complete** obtienen datos muy similares y equitativos. Por otro lado, el algoritmo **Clustering Jerárquico** con método **Single**, presenta unos resultados mucho más radicales ya que tiene dos agrupaciones con un único ejemplo.
