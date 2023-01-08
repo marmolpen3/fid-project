@@ -63,11 +63,25 @@ Para el desarrollo de esta parte del proyecto se propone estudiar el conjunto de
 para detectar los países más necesitados según sus características.
 
 ## Sección 2: Descripción del proceso de análisis
+La selección del conjunto de datos y la definición del problema a resolver es esencial para definir el proceso de análisis que se va a llevar a cabo.
 
 ### Análisis básico: Regresión
+En esta primera fase del proyecto se aplican algoritmos Supervisados para resolver el problema de las bicicletas anteriormente propuesto. Tomando como conjunto de datos el dataset "Bike Rental Data" y aplicando modelos de regresión se pretende predecir el número de bicicletas que se alquilarán en el futuro según las codiciones temporales.
 
+Con el proposito de resolver este problema se plantean una serie de etapas a seguir y métodos a aplicar. Las etapas y objetivos que plantea el grupo son los siguientes:
+- Análisis y preprocesado de los datos: Renombrar y eliminar atributos, búsqueda de valores perdidos, detección de outliers, estudio de las variables.
+- Análisis y Visualización de los datos: Comprobar la homogeneidad de los datos, histogramas, estudio de los datos.
+- Regresión lineal: Dispersión de los ejemplos frente a la variable a predecir, estudio de la correlación, construcción y estudio del modelo, prediccón.
+- Algoritmos paquete Caret: Creación modelos Random Forest, xgbTree y gbm.
+- Comparativa: Obtener el modelo con mejores resultados.
 
 ### Análisis avanzado: Clustering
+El segundo análisis del proyecto estará enfocado al estudio y aplicación de algoritmos No Supervisados con el fin de resolver el problema de los países anteriormente identificado. Empleando como conjunto de datos el dataset "Country Data" y aplicando modelos de Clustering como K-means y jerárquicos se desea ayudar a la ONG HELP International a seleccionar los países con más necesidades.
+
+Con el proposito de resolver este problema se plantean una serie de etapas a seguir y métodos a aplicar. Las etapas y objetivos que plantea el grupo son los siguientes:
+- Viabilidad de aplicar clustering al dataset "Bike Rental Data": Estudiar los resultados obtenidos tras aplicar Clustering.
+- Análisis y preprocesado de los datos: Renombrar y eliminar atributos, búsqueda de valores perdidos, detección de outliers, estudio de las variables.
+- Clustering: Escalar valores de las variables, aplicar algoritmo Particional K-means y Clustering Jerárquico.
 
 ## Sección 3: Descomposición de etapas
 
