@@ -123,12 +123,27 @@ Para todos los casos se realizaron diferentes pruebas de afinación del algoritm
 Tras realizar una comparativa entre los tres modelos entrenados, se visualizaron las distintas predicciones y se seleccionó el modelo generado con xgbTree para la predicción final.
 
 ### Análisis avanzado. Clustering
-#### Preprocesado de los datos
+La aplicación de algoritmos No Supervisados se ha dividido en dos análisis fundamentales. En primer lugar, se realizó un estudio de Clustering sobre los datos "Bike Rental data". Tal y como se esperaba tras la realización del notebook básico, los datos no se distribuyen de forma dispersa, aspecto que incrementaba la dificultad de extraer información de las agrupaciones. Por ello, en segundo lugar, se seleccionó un nuevo problema a resolver con datos más adecuados para el empleo de modelos de agrupación.
+
+#### Análisis y preprocesado de los datos
+En cuanto al análisis y preprocesado de los datos "Country data" se aplica la misma lógica en el notebook básico. Antes de la limpieza y transformación del dataset, se estudian las variables que se contemplan en la resolución del problema. Posteriormente, tiene lugar la búsqueda de valores perdidos, la detección y estudio de los outliers y se observa la correlación entre las diferentes variables. Finalmente, para aplicar los algoritmos de Clustering, se examina si las variables son de clase numérica y se escalan los datos seleccionados.
+
+Para completar todos los retos que se plantéan en esta etapa, se utilizan los siguientes paquetes: de tidyverse para manipulación de los datos y visualización, de Visadat para búsqueda de valores nulos, de ggplot2 para visualización y de corrplot para la correlación de las variables.
+
 #### Algoritmo Particional. K-means
+Acerca de la aplicación de Clustering Paticional, el primer paso es identificar el número de centros óptimo. Una vez se conoce el valor, se ejecuta el algoritmo K-means, que agrupa los ejemplos según la similitud de sus características. Además, para entender mejor los datos se realiza un análisis con mayor profundidad a través de gráficas y procesado de los datos agrupados por cluster.
+
+Para completar estas tareas se hace uso de las librerías anteriores y de NbClust y factoextra para la visualización de los clusters.
+
 #### Clustering Jerárquico
+Respecto al Clustering Jerárquico se emplean dos métodos diferentes "complete" y "single". Ambos permiten estudiar el dendograma de forma visual donde las agrupaciones en se generan en forma de árbol donde cada rama es un cluster. Además, para comparar y estudiar los resultados obtenidos, se emplean gráficas y se procesan los datos que se han agrupado en los distintos clusters.
+
+En esta etapa, se utilizan todas las librerías anteriores y además se añade ape, que mejora la visualización de los dendogramas.
+
+## Sección 4. Conclusiones
 
 
-## Sección 4. Subdivisión y descripción del trabajo por cada subequipo
+## Sección 5. Subdivisión y descripción del trabajo por cada subequipo
 
 El proyecto se ha dividido de forma equitativa por todos los miembros del grupo. Ambos subequipos han participado en el estudio, desarrollo o búsqueda de información del análisis básico y avanzado. A pesar de ello, cada notebook ha sido auditado por un subequipo concreto que se ha encargado de revisar y coordinar la ejecución del mismo. En concreto:
 - Mario Ruano Fernández y Juan Carlos Cortés Muñoz: dirección del notebook de análisis básico, estudio de los problemas seleccionados, búsqueda de información sobre regresión y clustering, aplicación de los algoritmos supervisados.
