@@ -13,7 +13,7 @@ install.packages("factoextra")
 install.packages("ape")
 ```
 
-Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización, de **corrplot** para la correlación de las variables y de **NbClust** y **factoextra** para clustering.
+Instalación de ***tidyverse*** para la manipulación de los datos y la visualización, de ***Visadat*** para búsqueda de valores nulos, de ***ggplot2*** para visualización, de **corrplot** para la correlación de las variables y de **NbClust** y **factoextra** para clustering, por último, de **ape** para la representación de los dendogramas.
 
 ```{r}
 library(tidyverse)
@@ -523,8 +523,12 @@ mean_data_complete <- contry_data_clust_df %>%
 mean_data_complete 
 ```
 
+```{r}
+contry_data_clust_df[contry_data_clust_df$sample_c_clusters == 3]
+```
+
 #### Conclusiones
 
-Si observamos los resultados obtenidos aplicando los diferentes modelos podemos deducir que el **Clustering Jerárquico** con método **Single** es el que peores resultados obtiene, puesto que dos de los clusters contienen un único ejemplo, aspecto que no consideramos correcto porque existen bastantes países subdesarrollados en el dataset.
+Si observamos los resultados obtenidos aplicando los diferentes modelos podemos deducir que el **Clustering Jerárquico** con método **Single** es el que peores resultados obtiene, puesto que dos de los clusters contienen un único ejemplo, aspecto que no consideramos correcto porque existen bastantes países con baja calidad de vida en el dataset.
 
 Sin embargo, tanto el algoritmo **k-means** como el **Clustering Jerárquico** con método **Complete** consiguen unos resultados con mayor calidad.
