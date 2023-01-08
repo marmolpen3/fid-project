@@ -86,10 +86,41 @@ Con el propósito de resolver este problema se plantean una serie de etapas a se
 ## Sección 3. Descomposición de etapas
 
 ### Análisis básico. Regresión
+En los siguientes apartados se detallan los pasos y las decisiones tomadas en cada una de las etapas realizadas para el nivel de análisis básico, en el cual se han desarrollado y puesto en práctica técnicas de regresión para predicción de valores en el caso del alquiler de bicicletas.
+
 #### Preprocesado de los datos
+En relación al preprocesado de los datos, se ha hecho uso de la librería tidyverse, lo que ha sido gran utilidad para manipular los datasets de forma fácil y rápida.
+
+Se comenzó buscando valores perdidos (NA) y outliers en las distintas variables del datasets de bicicletas, tanto en el subconjunto de entrenamiento como en el de test.
+
+El dataset elegido está bastante limpio, por lo que no tuvieron que realizarse demasiadas operaciones de preprocesado: no faltaban datos, se eliminaron algunas filas con outliers y se prescindió de la columna de identificador, la cual no aportaba valor.
+
 #### Análisis y visualización
+En la fase de análisis y visualización se plantearon una serie de cuestiones para poder observar la relación y la importancia que tienen las diferentes variables con la variable a predecir.
+
+Ayudándonos del paquete ggplot, para mostrar de forma visual los resultados, y haciendo las distintas operaciones con tidyverse, hemos dado respuesta a cuestiones como cuántos ejemplos hay según el año, la hora del día, la estación del año, los días laborales o los días de vaciones, así como en función del estado del tiempo. También se han observado los totales de de cuántas bicicletas son alquiladas según la hora del día, la estación o el estado del tiempo a través de histogramas.
+
+Con el apoyo de la visualización se ha tenido un conocimiento mayor de los datos con los que se trabajaba antes de proceder a estudiar, analizar e implementar distintas técnicas de predicción.
+
 #### Viabilidad sobre la regresión lineal
+Como primer paso para el estudio de la regresión, se analizó la viabilidad de aplicar un modelo de regresión lineal para dar resolución al problema. En concreto, se hizo uso del método lm del paquete stats de R.
+
+Se empezó estudiando la correlación de las distintas variables para poder observar relaciones lineales con respecto a la variable objetivo. En el dataset con el que se ha trabajado no se daban correlaciones altas, siendo la más destacable una correlación moderada, en torno a 0.5.
+
+Estos datos hicieron suponer que esta técnica de regresión no tendría buenos resultados para la predicción de los datos del problema. Tras graficar los valores de correlación, se procedió a entrenar un modelo. Los valores de rendimiento fueron realmente bajos, por lo que se descartó este tipo de modelo y se optó por aplicar diferentes algoritmos que se incluyen en el paquete Caret.
+
 #### Algoritmos paquete Caret
+Haciendo uso del paquete Caret se han aplicado un total de tres métodos algorítmicos diferentes, con la intención de generar varios modelos, compararlos y seleccionar el mejor entre estos para realizar la predicción final.
+
+Se optó por comenzar con el algoritmo de Random Forest. Los valores de rendimiento obtenidos no fueron malos. La predicción se ajustaba bastante a los datos reales.
+
+Se continuó aplicando el método xgbTree, uno de los que mejores resultados ofrece en problemas similares al estudiado. También se consiguieron niveles de rendimiento muy altos, aunque sin mejorar en gran medida a los que ya se habían obtenido con Random Forest.
+
+Por último, se generó un modelo aplicando el algoritmo Stochastic Gradiend Boosting (gbm). A pesar de que este algoritmo también aplica bien en estos casos, no llegó a un peor rendimiento.
+
+Para todos los casos se realizaron diferentes pruebas de afinación del algoritmo a través de la parametrización, seleccionando la configuración que mejor resultado de rendimiento y menor error ofrecía.
+
+Tras realizar una comparativa entre los tres modelos entrenados, se visualizaron las distintas predicciones y se seleccionó el modelo generado con xgbTree para la predicción final.
 
 ### Análisis avanzado. Clustering
 #### Preprocesado de los datos
