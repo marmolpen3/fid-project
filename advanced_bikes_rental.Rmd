@@ -599,3 +599,5 @@ summary(comparacion)
 ```
 
 Si observamos los resultados obtenidos aplicando los diferentes modelos podemos deducir que los algoritmos **k-means** y **Clustering Jerárquico** con método **Complete** obtienen datos muy similares y equitativos. Por otro lado, el algoritmo **Clustering Jerárquico** con método **Single**, presenta unos resultados mucho más radicales ya que tiene dos agrupaciones con un único ejemplo.
+
+Este notebook se ha realizado tomando de referencia el siguiente [notebook de Kaggle](https://www.kaggle.com/code/davimattar/help-international-clustering-using-r).
